@@ -1,9 +1,9 @@
+"""HeyMira - Sentiment Analysis (with API key rotation)"""
+
+from services.key_manager import key_manager
 import google.generativeai as genai
-from config import Config
 import json
 import re
-
-genai.configure(api_key=Config.GEMINI_API_KEY)
 
 # Crisis keywords for emergency detection
 CRISIS_KEYWORDS = [
@@ -19,8 +19,6 @@ CRISIS_KEYWORDS = [
 
 def analyze_sentiment(text):
     """Analyze sentiment of a message. Returns score from -1 (very negative) to 1 (very positive)."""
-    model = genai.GenerativeModel('gemini-2.5-flash')
-
     prompt = f"""Analyze the emotional sentiment of this message and return ONLY a JSON object with these fields:
 {{
     "score": <float from -1.0 to 1.0 where -1 is very negative, 0 is neutral, 1 is very positive>,
@@ -33,9 +31,10 @@ Message: "{text}"
 Return ONLY the JSON, no other text."""
 
     try:
-        response = model.generate_content(
+        response = key_manager.call_with_retry(
+            'gemini-2.5-flash-lite',
             [{"role": "user", "parts": [{"text": prompt}]}],
-            generation_config=genai.types.GenerationConfig(
+            genai.types.GenerationConfig(
                 max_output_tokens=200,
                 temperature=0.1,
             )
@@ -45,7 +44,7 @@ Return ONLY the JSON, no other text."""
             response_text = response_text.split('\n', 1)[1]
         if response_text.endswith('```'):
             response_text = response_text.rsplit('```', 1)[0]
-        
+
         return json.loads(response_text.strip())
     except Exception as e:
         print(f"Sentiment Analysis Error: {e}")
@@ -55,11 +54,11 @@ Return ONLY the JSON, no other text."""
 def detect_crisis(text):
     """Check if message contains crisis indicators."""
     text_lower = text.lower()
-    
+
     for keyword in CRISIS_KEYWORDS:
         if keyword in text_lower:
             return True
-    
+
     return False
 
 

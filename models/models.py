@@ -30,12 +30,17 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
+        doctor_name = None
+        if self.assigned_doctor_id:
+            doc = User.query.get(self.assigned_doctor_id)
+            doctor_name = doc.username if doc else None
         return {
             'id': self.id,
             'username': self.username,
             'email': self.email,
             'role': self.role,
             'assigned_doctor_id': self.assigned_doctor_id,
+            'assigned_doctor_name': doctor_name,
             'theme': self.theme,
             'created_at': self.created_at.isoformat()
         }
@@ -56,6 +61,7 @@ class Persona(db.Model):
     supportiveness = db.Column(db.String(50), default='')
     response_length = db.Column(db.String(50), default='')
     source_filename = db.Column(db.String(255), default='')
+    raw_text = db.Column(db.Text, default='')  # Store raw extracted text for richer AI context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     conversations = db.relationship('Conversation', backref='persona', lazy=True)
@@ -195,4 +201,31 @@ class Alert(db.Model):
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat(),
             'patient_name': self.patient.username if self.patient else None
+        }
+
+
+class ConnectionRequest(db.Model):
+    __tablename__ = 'connection_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, accepted, rejected
+    message = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    responded_at = db.Column(db.DateTime, nullable=True)
+
+    doctor = db.relationship('User', foreign_keys=[doctor_id], backref='sent_requests')
+    patient = db.relationship('User', foreign_keys=[patient_id], backref='received_requests')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'doctor_id': self.doctor_id,
+            'patient_id': self.patient_id,
+            'doctor_name': self.doctor.username if self.doctor else None,
+            'patient_name': self.patient.username if self.patient else None,
+            'status': self.status,
+            'message': self.message,
+            'created_at': self.created_at.isoformat(),
+            'responded_at': self.responded_at.isoformat() if self.responded_at else None
         }

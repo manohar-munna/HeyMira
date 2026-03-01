@@ -55,7 +55,8 @@ def upload_persona():
         humor_level=profile.get('humor_level', ''),
         supportiveness=profile.get('supportiveness', ''),
         response_length=profile.get('response_length', ''),
-        source_filename=file.filename
+        source_filename=file.filename,
+        raw_text=person_text[:10000]  # Store up to 10k chars for richer AI context
     )
     db.session.add(persona)
     db.session.commit()

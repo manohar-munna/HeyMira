@@ -29,6 +29,9 @@
             </select>
         </div>
 
+        <!-- Connection Requests (patient only) -->
+        <div id="connection-requests" style="display:none;padding:0 12px 8px;"></div>
+
         <!-- Conversations -->
         <div class="conversation-list" id="conversation-list">
             <div class="empty-state">
@@ -57,6 +60,7 @@
                 <div class="user-info">
                     <div class="user-name" id="user-name">Loading...</div>
                     <div class="user-role" id="user-role">patient</div>
+                    <div id="doctor-status" style="font-size:0.7rem;"></div>
                 </div>
                 <button class="btn btn-sm btn-secondary" onclick="logout()"
                     style="padding:6px 10px;font-size:0.75rem;">⏎</button>

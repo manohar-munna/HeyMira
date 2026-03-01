@@ -28,12 +28,6 @@ def register():
     user = User(username=username, email=email, role=role)
     user.set_password(password)
 
-    # Auto-assign a doctor to new patients
-    if role == 'patient':
-        doctor = User.query.filter_by(role='doctor').first()
-        if doctor:
-            user.assigned_doctor_id = doctor.id
-
     db.session.add(user)
     db.session.commit()
 

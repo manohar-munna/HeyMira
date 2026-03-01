@@ -1,46 +1,43 @@
-import google.generativeai as genai
-from config import Config
-import json
+"""HeyMira - Report Generation (with API key rotation)"""
 
-genai.configure(api_key=Config.GEMINI_API_KEY)
+from services.key_manager import key_manager
+import google.generativeai as genai
+import json
 
 
 def generate_session_report(messages):
-    """Generate a session report from conversation messages."""
+    """Generate a summary report for a therapy session."""
     if not messages:
         return {
-            'sentiment_score': 0.0,
+            'sentiment_score': 0,
             'emotional_trend': 'stable',
             'risk_level': 'low',
             'ai_summary': 'No messages in this session.'
         }
 
-    model = genai.GenerativeModel('gemini-2.5-flash')
-
     conversation_text = ""
     for msg in messages:
-        role = "Patient" if msg.get('role') == 'user' else "AI Companion"
+        role = "Patient" if msg.get('role') == 'user' else "AI"
         conversation_text += f"{role}: {msg.get('content', '')}\n"
 
-    prompt = f"""Analyze this therapy conversation and provide a clinical summary report.
-Return ONLY a JSON object with these fields:
-
+    prompt = f"""Analyze this therapy conversation and return ONLY a JSON object:
 {{
-    "sentiment_score": <float -1.0 to 1.0, overall emotional state>,
-    "emotional_trend": "<improving, declining, or stable>",
-    "risk_level": "<low, moderate, high, or critical>",
-    "ai_summary": "<2-3 sentence professional summary of the session, noting key topics discussed, emotional state, and any concerns>"
+    "sentiment_score": <float -1.0 to 1.0>,
+    "emotional_trend": "<improving/declining/stable>",
+    "risk_level": "<low/moderate/high/critical>",
+    "ai_summary": "<2-3 sentence summary of the session, the patient's state, and key topics discussed>"
 }}
 
 Conversation:
 {conversation_text[:6000]}
 
-Return ONLY the JSON, no other text."""
+Return ONLY valid JSON."""
 
     try:
-        response = model.generate_content(
+        response = key_manager.call_with_retry(
+            'gemini-2.5-flash-lite',
             [{"role": "user", "parts": [{"text": prompt}]}],
-            generation_config=genai.types.GenerationConfig(
+            genai.types.GenerationConfig(
                 max_output_tokens=400,
                 temperature=0.2,
             )
@@ -50,17 +47,13 @@ Return ONLY the JSON, no other text."""
             response_text = response_text.split('\n', 1)[1]
         if response_text.endswith('```'):
             response_text = response_text.rsplit('```', 1)[0]
-        
+
         return json.loads(response_text.strip())
     except Exception as e:
         print(f"Report Generation Error: {e}")
-        # Fallback: compute basic stats
-        sentiment_scores = [msg.get('sentiment_score', 0) for msg in messages if msg.get('role') == 'user']
-        avg_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0
-
         return {
-            'sentiment_score': round(avg_sentiment, 2),
+            'sentiment_score': 0,
             'emotional_trend': 'stable',
-            'risk_level': 'low' if avg_sentiment > -0.3 else ('moderate' if avg_sentiment > -0.6 else 'high'),
-            'ai_summary': f'Session contained {len(messages)} messages. Average sentiment: {avg_sentiment:.2f}.'
+            'risk_level': 'low',
+            'ai_summary': 'Unable to generate session summary.'
         }

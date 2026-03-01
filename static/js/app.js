@@ -16,7 +16,7 @@ function setTheme(theme) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme })
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 function loadTheme() {
@@ -62,20 +62,49 @@ async function apiCall(url, options = {}) {
 async function logout() {
     try {
         await apiCall('/api/auth/logout', { method: 'POST' });
-    } catch (e) {}
+    } catch (e) { }
     window.location.href = '/login';
 }
 
-// Format date
+// Format date — shows REAL actual time (local timezone)
 function formatDate(dateStr) {
-    const date = new Date(dateStr);
+    if (!dateStr) return '';
+    const date = new Date(dateStr + (dateStr.endsWith('Z') ? '' : 'Z')); // Ensure UTC parsing
     const now = new Date();
     const diff = now - date;
-    
+
+    // If within last minute
     if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    // If today, show time
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+        return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    // If yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday ' + date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    // Otherwise show full date + time
+    return date.toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric'
+    }) + ' ' + date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// Format time only (for chat messages)
+function formatTime(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + (dateStr.endsWith('Z') ? '' : 'Z'));
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// Get current real time string
+function getCurrentTime() {
+    return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
 // Get risk badge class

@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadUser();
     await loadPersonas();
     await loadConversations();
+    await checkConnectionRequests();
+    connectSSE();
 });
 
 async function loadUser() {
@@ -17,6 +19,16 @@ async function loadUser() {
         document.getElementById('user-name').textContent = currentUser.username;
         document.getElementById('user-role').textContent = currentUser.role;
         document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+
+        // Show doctor connection status
+        const docStatus = document.getElementById('doctor-status');
+        if (docStatus) {
+            if (currentUser.assigned_doctor_id) {
+                docStatus.innerHTML = `<span style="color:var(--success);">● Connected to Dr. ${currentUser.assigned_doctor_name || 'Doctor'}</span>`;
+            } else {
+                docStatus.innerHTML = `<span style="color:var(--warning);">○ No doctor connected</span>`;
+            }
+        }
 
         if (currentUser.theme) {
             setTheme(currentUser.theme);
@@ -46,6 +58,117 @@ async function loadConversations() {
         conversations = data.conversations;
         renderConversationList();
     } catch (e) { }
+}
+
+async function checkConnectionRequests() {
+    try {
+        const data = await apiCall('/api/patient/connection-requests');
+        if (data.requests && data.requests.length > 0) {
+            showConnectionRequests(data.requests);
+        }
+    } catch (e) { }
+}
+
+function showConnectionRequests(requests) {
+    const container = document.getElementById('connection-requests');
+    if (!container) return;
+
+    container.innerHTML = requests.map(r => `
+        <div class="glass-card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--accent);">
+            <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">
+                Dr. ${escapeHtml(r.doctor_name)} wants to connect
+            </div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">
+                ${escapeHtml(r.message)}
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="respondToRequest(${r.id}, 'accept')">Accept</button>
+                <button class="btn btn-secondary btn-sm" onclick="respondToRequest(${r.id}, 'reject')">Decline</button>
+            </div>
+        </div>
+    `).join('');
+    container.style.display = 'block';
+}
+
+async function respondToRequest(requestId, action) {
+    try {
+        const data = await apiCall(`/api/patient/connection-requests/${requestId}/respond`, {
+            method: 'POST',
+            body: JSON.stringify({ action })
+        });
+        showToast(data.message, 'success');
+
+        // Smoothly remove the request card (no reload!)
+        const container = document.getElementById('connection-requests');
+        const cards = container.querySelectorAll('.glass-card');
+        cards.forEach(card => {
+            card.style.transition = 'opacity 0.3s, transform 0.3s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-20px)';
+            setTimeout(() => card.remove(), 300);
+        });
+
+        // Hide container after animation
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 350);
+
+        // Update doctor status instantly (no reload)
+        if (action === 'accept' && data.doctor_name) {
+            updateDoctorStatus(data.doctor_name);
+        }
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+function updateDoctorStatus(doctorName) {
+    const docStatus = document.getElementById('doctor-status');
+    if (docStatus) {
+        docStatus.innerHTML = `<span style="color:var(--success);">● Connected to Dr. ${escapeHtml(doctorName)}</span>`;
+        docStatus.style.transition = 'opacity 0.3s';
+        docStatus.style.opacity = '0';
+        setTimeout(() => { docStatus.style.opacity = '1'; }, 50);
+    }
+}
+
+// ========== Server-Sent Events (SSE) ==========
+
+function connectSSE() {
+    const evtSource = new EventSource('/api/events/stream');
+
+    evtSource.addEventListener('connection_request', (e) => {
+        const data = JSON.parse(e.data);
+        const container = document.getElementById('connection-requests');
+        if (container) {
+            container.style.display = 'block';
+            container.innerHTML += `
+                <div class="glass-card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--accent);animation:slideIn 0.3s ease;">
+                    <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">
+                        Dr. ${escapeHtml(data.doctor_name)} wants to connect
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">
+                        ${escapeHtml(data.message)}
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary btn-sm" onclick="respondToRequest(${data.id}, 'accept')">Accept</button>
+                        <button class="btn btn-secondary btn-sm" onclick="respondToRequest(${data.id}, 'reject')">Decline</button>
+                    </div>
+                </div>
+            `;
+            showToast('New request from Dr. ' + data.doctor_name, 'success');
+        }
+    });
+
+    evtSource.addEventListener('alert', (e) => {
+        const data = JSON.parse(e.data);
+        showToast('⚠️ ' + data.message, 'warning');
+    });
+
+    evtSource.onerror = () => {
+        evtSource.close();
+        setTimeout(connectSSE, 5000);
+    };
 }
 
 function renderConversationList() {
@@ -129,7 +252,8 @@ function renderMessages(messages) {
 
 function addMessageToUI(role, content, timestamp = null, isVoice = false) {
     const area = document.getElementById('messages-area');
-    const time = timestamp ? formatDate(timestamp) : 'Just now';
+    // Use formatTime for chat message timestamps (shows actual clock time)
+    const time = timestamp ? formatTime(timestamp) : getCurrentTime();
     const avatar = role === 'ai' ? '💜' : (currentUser ? currentUser.username[0].toUpperCase() : '?');
 
     const msgDiv = document.createElement('div');
