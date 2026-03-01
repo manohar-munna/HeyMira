@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Chat - HeyMira{% endblock %}
+
+{% block body %}
+<div class="chat-layout">
+    <!-- Sidebar -->
+    <aside class="chat-sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">💜</div>
+                <span>HeyMira</span>
+            </div>
+        </div>
+
+        <div class="sidebar-actions">
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;"
+                onclick="newConversation()">
+                ✨ New Chat
+            </button>
+            <a href="/upload" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">
+                📄 Upload Persona
+            </a>
+        </div>
+
+        <!-- Persona selector -->
+        <div style="padding: 0 20px 12px;">
+            <select class="form-input" id="persona-select" style="font-size:0.85rem;padding:8px 12px;">
+                <option value="">No persona (default AI)</option>
+            </select>
+        </div>
+
+        <!-- Conversations -->
+        <div class="conversation-list" id="conversation-list">
+            <div class="empty-state">
+                <div class="empty-icon">💬</div>
+                <p>No conversations yet</p>
+            </div>
+        </div>
+
+        <!-- Bottom: theme + user -->
+        <div class="sidebar-bottom">
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Mood Theme</div>
+            <div class="theme-switcher">
+                <button class="theme-btn" data-theme="calm-night" title="Calm Night"
+                    onclick="setTheme('calm-night')">🌙</button>
+                <button class="theme-btn" data-theme="warm-sunset" title="Warm Sunset"
+                    onclick="setTheme('warm-sunset')">🌅</button>
+                <button class="theme-btn" data-theme="ocean-breeze" title="Ocean Breeze"
+                    onclick="setTheme('ocean-breeze')">🌊</button>
+                <button class="theme-btn" data-theme="blossom" title="Blossom" onclick="setTheme('blossom')">🌸</button>
+                <button class="theme-btn" data-theme="forest" title="Forest" onclick="setTheme('forest')">🌿</button>
+                <button class="theme-btn" data-theme="cloudy" title="Cloudy" onclick="setTheme('cloudy')">☁️</button>
+            </div>
+
+            <div class="user-section" id="user-section">
+                <div class="user-avatar" id="user-avatar">?</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-name">Loading...</div>
+                    <div class="user-role" id="user-role">patient</div>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="logout()"
+                    style="padding:6px 10px;font-size:0.75rem;">⏎</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Chat area -->
+    <main class="chat-main">
+        <!-- Welcome state (shown when no conversation selected) -->
+        <div class="chat-welcome" id="chat-welcome">
+            <div class="welcome-icon">💜</div>
+            <h2>Hey there 👋</h2>
+            <p>Start a new conversation or upload a persona PDF to make me talk like someone you trust.</p>
+            <button class="btn btn-primary" onclick="newConversation()">✨ Start Chatting</button>
+        </div>
+
+        <!-- Active chat (hidden initially) -->
+        <div id="chat-active" style="display:none;flex:1;display:none;flex-direction:column;height:100vh;">
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <h3 id="chat-title">New Conversation</h3>
+                    <span class="persona-name" id="chat-persona"></span>
+                </div>
+                <div class="chat-header-right">
+                    <div class="mood-indicator" id="mood-indicator">
+                        <span>😊</span>
+                        <span id="mood-text">Neutral</span>
+                    </div>
+                    <button class="btn btn-icon btn-secondary voice-btn" id="voice-btn" onclick="toggleVoiceCall()"
+                        title="Voice Call">
+                        🎤
+                    </button>
+                    <button class="btn btn-icon btn-secondary" onclick="endConversation()" title="End Session">
+                        ⏹
+                    </button>
+                </div>
+            </div>
+
+            <div class="messages-area" id="messages-area">
+                <!-- Messages will be inserted here -->
+            </div>
+
+            <div class="typing-indicator" id="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Type your message..."
+                        onkeypress="if(event.key==='Enter')sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()" id="send-btn">➤</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Voice Call Overlay -->
+<div class="voice-overlay" id="voice-overlay">
+    <div class="voice-avatar" id="voice-avatar">💜</div>
+    <div class="voice-status" id="voice-status">Listening...</div>
+    <div class="voice-transcript" id="voice-transcript">Speak naturally — I'm here for you</div>
+    <div class="voice-controls">
+        <button class="voice-end-btn" onclick="endVoiceCall()">✕</button>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+{% endblock %}

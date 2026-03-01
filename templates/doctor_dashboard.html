@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard - HeyMira{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="dashboard-layout">
+    <header class="dashboard-header">
+        <div class="dashboard-header-left">
+            <div class="logo">
+                <div class="logo-icon">💜</div>
+                <span>HeyMira</span>
+            </div>
+            <span style="color:var(--text-muted);font-size:0.9rem;">Doctor Dashboard</span>
+        </div>
+        <div class="dashboard-header-right">
+            <button class="btn btn-icon btn-secondary alert-bell" id="alert-bell" onclick="toggleAlerts()">
+                🔔
+                <span class="alert-count" id="alert-count">0</span>
+            </button>
+            <div class="user-section" style="padding:6px 10px;">
+                <div class="user-avatar" id="doc-avatar">D</div>
+                <div class="user-info">
+                    <div class="user-name" id="doc-name">Doctor</div>
+                    <div class="user-role">Doctor</div>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="dashboard-content">
+        <!-- Patients Section -->
+        <div class="dashboard-section glass-card">
+            <h2>👥 My Patients</h2>
+            <div id="patient-list">
+                <div class="empty-state">
+                    <div class="empty-icon">👥</div>
+                    <p>No patients assigned yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="dashboard-section glass-card">
+            <h2>🚨 Alerts</h2>
+            <div id="alert-list">
+                <div class="empty-state">
+                    <div class="empty-icon">✅</div>
+                    <p>No alerts — all patients are doing well</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sentiment Overview -->
+        <div class="dashboard-section glass-card full-width">
+            <h2>📊 Sentiment Overview</h2>
+            <div class="chart-container">
+                <canvas id="sentiment-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Detail Modal -->
+<div class="modal-overlay" id="patient-modal">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h2 id="modal-patient-name">Patient Details</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div id="modal-body">
+            <h3 style="margin-bottom:16px;font-size:1rem;">Session Reports</h3>
+            <div class="report-timeline" id="modal-reports">
+                <div class="empty-state">
+                    <p>No reports available</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/doctor.js') }}"></script>
+{% endblock %}

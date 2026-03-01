@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}HeyMira - Your AI Therapy Companion{% endblock %}
+
+{% block body %}
+<div class="landing-page">
+    <div class="hero-glow"></div>
+
+    <nav class="landing-nav">
+        <div class="logo">
+            <div class="logo-icon">💜</div>
+            <span>HeyMira</span>
+        </div>
+        <div class="nav-links">
+            <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+            <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">✨ AI-Powered Emotional Support</div>
+        <h1>Talk to Someone<br>Who <span class="gradient-text">Truly Gets You</span></h1>
+        <p>HeyMira learns the communication style of someone you trust and creates an AI companion that talks just like
+            them — warm, empathetic, and always there for you.</p>
+        <div class="hero-cta">
+            <a href="/register" class="btn btn-primary">Start Your Journey →</a>
+            <a href="/register?role=doctor" class="btn btn-secondary">I'm a Doctor</a>
+        </div>
+    </section>
+
+    <section class="features-grid">
+        <div class="feature-card glass-card">
+            <div class="feature-icon">🧠</div>
+            <h3>Personality Cloning</h3>
+            <p>Upload conversations and let AI learn the speaking style, tone, and personality of someone you connect
+                with.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <div class="feature-icon">💬</div>
+            <h3>Chat & Voice Calls</h3>
+            <p>Text or call your AI companion anytime. It responds naturally, just like talking to a real person who
+                cares.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <div class="feature-icon">📊</div>
+            <h3>Doctor Monitoring</h3>
+            <p>Doctors get real-time dashboards with sentiment trends, risk alerts, and session summaries for each
+                patient.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <div class="feature-icon">🚨</div>
+            <h3>Crisis Detection</h3>
+            <p>AI detects signs of crisis and immediately alerts your assigned therapist for professional intervention.
+            </p>
+        </div>
+        <div class="feature-card glass-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Mood Themes</h3>
+            <p>Choose from calming visual themes that match your mood — from soothing nights to gentle blossoms.</p>
+        </div>
+        <div class="feature-card glass-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Safe & Private</h3>
+            <p>Your conversations are private. The AI follows therapy safety guidelines and encourages professional
+                help.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}

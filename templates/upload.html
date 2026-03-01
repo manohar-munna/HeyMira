@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Upload Persona - HeyMira{% endblock %}
+
+{% block body %}
+<div class="upload-page">
+    <div class="page-header">
+        <a href="/chat" class="back-link">← Back to Chat</a>
+        <h1>Upload Persona</h1>
+        <p>Upload a WhatsApp chat export or conversation PDF to create an AI personality</p>
+    </div>
+
+    <div class="upload-card glass-card">
+        <form id="upload-form" onsubmit="return false;">
+            <div class="form-group">
+                <label for="person-name">Person's Name</label>
+                <input type="text" id="person-name" class="form-input" placeholder="Enter the person's name" required>
+            </div>
+
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+                <div class="drop-icon">📄</div>
+                <h3>Drop PDF here or click to browse</h3>
+                <p>Supports WhatsApp chat exports and conversation PDFs</p>
+                <div class="file-name" id="file-name"></div>
+            </div>
+            <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelect(this)">
+
+            <div class="upload-progress" id="upload-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Analyzing personality...</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" id="upload-btn"
+                onclick="uploadPersona()">
+                🧠 Analyze & Create Persona
+            </button>
+        </form>
+    </div>
+
+    <div class="persona-result glass-card" id="persona-result">
+        <h3>✨ Persona Created!</h3>
+        <div class="trait-grid" id="trait-grid">
+            <!-- Traits will be filled dynamically -->
+        </div>
+        <div style="text-align:center;margin-top:24px;">
+            <a href="/chat" class="btn btn-primary">Start Chatting with this Persona →</a>
+        </div>
+    </div>
+
+    <!-- Existing Personas -->
+    <div class="persona-list" id="persona-list-section">
+        <h3>Your Personas</h3>
+        <div id="persona-list">
+            <div class="empty-state">
+                <div class="empty-icon">🧠</div>
+                <p>No personas created yet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
