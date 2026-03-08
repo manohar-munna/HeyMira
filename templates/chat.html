@@ -23,30 +23,10 @@
         </div>
 
         <!-- Persona selector -->
-        <div style="padding: 0 20px 12px; position: relative;">
-            <div class="custom-dropdown" id="persona-dropdown" onclick="togglePersonaDropdown()">
-                <div class="custom-dropdown-selected" id="persona-selected">
-                    <div class="persona-option-avatar">💜</div>
-                    <div class="persona-option-info">
-                        <span class="persona-option-name">Default AI</span>
-                        <span class="persona-option-desc">HeyMira Support</span>
-                    </div>
-                    <div class="custom-dropdown-arrow">▼</div>
-                </div>
-                <div class="custom-dropdown-menu" id="persona-dropdown-menu">
-                    <div class="custom-dropdown-item active"
-                        onclick="selectPersonaOption(null, 'Default AI', 'HeyMira Support', null, event)">
-                        <div class="persona-option-avatar">💜</div>
-                        <div class="persona-option-info">
-                            <span class="persona-option-name">Default AI</span>
-                            <span class="persona-option-desc">HeyMira Support</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hidden real input for JS logic -->
-            <input type="hidden" id="persona-select" value="">
+        <div style="padding: 0 20px 12px;">
+            <select class="form-input" id="persona-select" style="font-size:0.85rem;padding:8px 12px;">
+                <option value="">No persona (default AI)</option>
+            </select>
         </div>
 
         <!-- Connection Requests (patient only) -->
@@ -82,8 +62,6 @@
                     <div class="user-role" id="user-role">patient</div>
                     <div id="doctor-status" style="font-size:0.7rem;"></div>
                 </div>
-                <button class="btn btn-sm btn-secondary" onclick="openProfileModal()"
-                    style="padding:6px 10px;font-size:0.75rem;margin-right:4px;">⚙️</button>
                 <button class="btn btn-sm btn-secondary" onclick="logout()"
                     style="padding:6px 10px;font-size:0.75rem;">⏎</button>
             </div>
@@ -101,10 +79,9 @@
         </div>
 
         <!-- Active chat (hidden initially) -->
-        <div id="chat-active" style="display:none;flex:1;flex-direction:column;height:100vh;">
+        <div id="chat-active" style="display:none;flex:1;display:none;flex-direction:column;height:100vh;">
             <div class="chat-header">
                 <div class="chat-header-left">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                     <h3 id="chat-title">New Conversation</h3>
                     <span class="persona-name" id="chat-persona"></span>
                 </div>
@@ -151,52 +128,6 @@
     <div class="voice-transcript" id="voice-transcript">Speak naturally — I'm here for you</div>
     <div class="voice-controls">
         <button class="voice-end-btn" onclick="endVoiceCall()">✕</button>
-    </div>
-</div>
-
-<!-- Profile Modal -->
-<div class="modal-overlay" id="profile-modal" style="display:none; justify-content:center; align-items:center;">
-    <div class="modal-content glass-card" style="width:100%; max-width:400px; position:relative;">
-        <div class="modal-header">
-            <h2>Edit Profile</h2>
-            <button class="modal-close" onclick="closeProfileModal()">✕</button>
-        </div>
-        <form id="profile-form" onsubmit="saveProfile(event)" style="padding: 20px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div class="user-avatar" id="profile-preview-avatar"
-                    style="width:80px; height:80px; border-radius:50%; margin:0 auto 10px; font-size:2rem;">
-                    ?
-                </div>
-                <label for="profile-image-input" class="btn btn-sm btn-secondary" style="cursor:pointer;">
-                    Upload Picture
-                </label>
-                <input type="file" id="profile-image-input" accept="image/*" style="display:none;"
-                    onchange="previewProfileImage(event)">
-            </div>
-
-            <div class="form-group">
-                <label for="profile-username">Name</label>
-                <input type="text" id="profile-username" class="form-input">
-            </div>
-            <div class="form-group" style="display:flex; gap:12px;">
-                <div style="flex:1;">
-                    <label for="profile-age">Age</label>
-                    <input type="number" id="profile-age" class="form-input" min="1" max="120">
-                </div>
-                <div style="flex:1;">
-                    <label for="profile-gender">Gender</label>
-                    <select id="profile-gender" class="form-input">
-                        <option value="">Select...</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary"
-                style="width:100%; justify-content:center; margin-top:20px;">Save Changes</button>
-        </form>
     </div>
 </div>
 

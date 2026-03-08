@@ -11,70 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAlerts();
     await loadAvailablePatients();
 
-    // Poll for new alerts every 60 seconds (fallback)
+    // Poll for new alerts every 60 seconds
     setInterval(loadAlerts, 60000);
-
-    // Connect to SSE for real-time notifications
-    connectSSE();
 });
-
-// ========== Themes & Real-Time Events ==========
-
-function setTheme(theme) {
-    document.body.className = '';
-
-    if (theme && theme !== 'calm-night') {
-        document.body.classList.add(`theme-${theme}`);
-    }
-
-    // Update active state on buttons if they exist
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.theme === theme || (!theme && btn.dataset.theme === 'calm-night'));
-    });
-
-    // Save to server
-    apiCall('/api/auth/update-theme', {
-        method: 'POST',
-        body: JSON.stringify({ theme })
-    }).catch(e => console.error('Failed to save theme', e));
-}
-
-function connectSSE() {
-    const evtSource = new EventSource('/api/events/stream');
-
-    // Listen for new crisis alerts from connected patients
-    evtSource.addEventListener('alert', (e) => {
-        const data = JSON.parse(e.data);
-        showToast(`🚨 Urgent: ${data.patient_name} - ${data.message}`, 'error');
-
-        // Refresh patients list so badge updates
-        loadPatients();
-        // Refresh alerts list
-        loadAlerts();
-
-        // Native browser notification if permitted
-        if (Notification.permission === "granted") {
-            new Notification("HeyMira Crisis Alert", {
-                body: `${data.patient_name}: ${data.message}`,
-                icon: "/favicon.ico"
-            });
-        }
-    });
-
-    // Listen for patients accepting your request
-    evtSource.addEventListener('connection_accepted', (e) => {
-        const data = JSON.parse(e.data);
-        showToast(`✅ ${data.patient_name} accepted your connection request!`, 'success');
-        loadPatients();
-        loadAvailablePatients();
-    });
-
-    evtSource.onerror = () => {
-        evtSource.close();
-        setTimeout(connectSSE, 5000);
-    };
-}
-
 
 // ========== Tab System ==========
 

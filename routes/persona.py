@@ -42,22 +42,6 @@ def upload_persona():
     # Analyze personality using AI
     profile = analyze_persona_from_text(person_text, person_name)
 
-    # Handle persona image if provided
-    image_filename = None
-    if 'image_file' in request.files:
-        img_file = request.files['image_file']
-        if img_file and img_file.filename != '':
-            ext = img_file.filename.rsplit('.', 1)[-1].lower()
-            if ext in {'png', 'jpg', 'jpeg', 'gif', 'webp'}:
-                from werkzeug.utils import secure_filename
-                import uuid
-                from flask import current_app
-                
-                image_filename = secure_filename(f"persona_{uuid.uuid4().hex[:8]}.{ext}")
-                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
-                os.makedirs(upload_folder, exist_ok=True)
-                img_file.save(os.path.join(upload_folder, image_filename))
-
     # Save persona to database
     persona = Persona(
         user_id=current_user.id,
@@ -72,7 +56,6 @@ def upload_persona():
         supportiveness=profile.get('supportiveness', ''),
         response_length=profile.get('response_length', ''),
         source_filename=file.filename,
-        image_filename=image_filename,
         raw_text=person_text[:10000]  # Store up to 10k chars for richer AI context
     )
     db.session.add(persona)

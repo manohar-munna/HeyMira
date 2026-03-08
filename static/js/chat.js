@@ -41,83 +41,16 @@ async function loadUser() {
 async function loadPersonas() {
     try {
         const data = await apiCall('/api/persona/list');
-        const menu = document.getElementById('persona-dropdown-menu');
-
-        let html = `
-            <div class="custom-dropdown-item active" onclick="selectPersonaOption('', 'Default AI', 'HeyMira Support', null, event)">
-                <div class="persona-option-avatar">💜</div>
-                <div class="persona-option-info">
-                    <span class="persona-option-name">Default AI</span>
-                    <span class="persona-option-desc">HeyMira Support</span>
-                </div>
-            </div>
-        `;
-
+        const select = document.getElementById('persona-select');
+        select.innerHTML = '<option value="">No persona (default AI)</option>';
         data.personas.forEach(p => {
-            const avatarHtml = p.image_filename
-                ? `<img src="/static/uploads/${p.image_filename}" alt="${escapeHtml(p.name)}">`
-                : `${escapeHtml(p.name[0].toUpperCase())}`;
-
-            const safeName = escapeHtml(p.name).replace(/'/g, "\\'");
-            const safeTone = escapeHtml(p.tone || 'AI Assistant').replace(/'/g, "\\'");
-            const safeImg = p.image_filename ? `'${p.image_filename}'` : 'null';
-
-            html += `
-                <div class="custom-dropdown-item" onclick="selectPersonaOption('${p.id}', '${safeName}', '${safeTone}', ${safeImg}, event)">
-                    <div class="persona-option-avatar">${avatarHtml}</div>
-                    <div class="persona-option-info">
-                        <span class="persona-option-name">${safeName}</span>
-                        <span class="persona-option-desc">${safeTone}</span>
-                    </div>
-                </div>
-            `;
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.name} — ${p.tone}`;
+            select.appendChild(opt);
         });
-
-        menu.innerHTML = html;
-    } catch (e) { console.error('Error loading personas:', e); }
+    } catch (e) { }
 }
-
-function togglePersonaDropdown() {
-    document.getElementById('persona-dropdown').classList.toggle('open');
-}
-
-function selectPersonaOption(id, name, desc, image, event) {
-    if (event) event.stopPropagation();
-
-    // Update hidden input component
-    document.getElementById('persona-select').value = id || '';
-
-    // Close dropdown
-    document.getElementById('persona-dropdown').classList.remove('open');
-
-    // Update active class
-    document.querySelectorAll('.custom-dropdown-item').forEach(el => el.classList.remove('active'));
-    if (event) event.currentTarget.classList.add('active');
-
-    // Update selected block
-    const avatarHtml = image
-        ? `<img src="/static/uploads/${image}" alt="${name}">`
-        : (id ? name[0].toUpperCase() : '💜');
-
-    const selectedHtml = `
-        <div class="persona-option-avatar">${avatarHtml}</div>
-        <div class="persona-option-info">
-            <span class="persona-option-name">${name}</span>
-            <span class="persona-option-desc">${desc}</span>
-        </div>
-        <div class="custom-dropdown-arrow">▼</div>
-    `;
-
-    document.getElementById('persona-selected').innerHTML = selectedHtml;
-}
-
-// Close dropdown if clicking outside
-document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('persona-dropdown');
-    if (dropdown && !dropdown.contains(e.target)) {
-        dropdown.classList.remove('open');
-    }
-});
 
 async function loadConversations() {
     try {
@@ -273,9 +206,8 @@ async function newConversation() {
         renderMessages([]);
 
         // Show welcome AI message
-        const activeOption = document.querySelector('.custom-dropdown-item.active .persona-option-name');
-        const personaName = activeOption ? activeOption.textContent : 'HeyMira';
-        addMessageToUI('ai', `Hey! 😊 I'm ${personaName}. How are you feeling today? I'm here to listen and chat whenever you need someone.`);
+        const persona = personaId ? document.getElementById('persona-select').selectedOptions[0].textContent : 'HeyMira';
+        addMessageToUI('ai', `Hey! 😊 I'm ${persona.split(' — ')[0]}. How are you feeling today? I'm here to listen and chat whenever you need someone.`);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -302,17 +234,8 @@ function showChatUI() {
 
     const personaEl = document.getElementById('chat-persona');
     if (currentConversation.persona_id) {
-        // Try to find the name in the loaded dropdown list
-        const items = document.querySelectorAll('.custom-dropdown-item');
-        let foundName = 'Persona';
-        // Hacky way to find it since we store ID in onclick
-        items.forEach(item => {
-            if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${currentConversation.persona_id}'`)) {
-                const nameSpan = item.querySelector('.persona-option-name');
-                if (nameSpan) foundName = nameSpan.textContent;
-            }
-        });
-        personaEl.textContent = `Speaking as ${foundName}`;
+        const opt = document.querySelector(`#persona-select option[value="${currentConversation.persona_id}"]`);
+        personaEl.textContent = opt ? `Speaking as ${opt.textContent.split(' — ')[0]}` : '';
     } else {
         personaEl.textContent = '';
     }
@@ -331,19 +254,12 @@ function addMessageToUI(role, content, timestamp = null, isVoice = false) {
     const area = document.getElementById('messages-area');
     // Use formatTime for chat message timestamps (shows actual clock time)
     const time = timestamp ? formatTime(timestamp) : getCurrentTime();
-
-    // Default avatar logic
-    let avatarHtml = role === 'ai' ? '💜' : (currentUser ? currentUser.username[0].toUpperCase() : '?');
-
-    // User profile image
-    if (role === 'user' && currentUser && currentUser.profile_image) {
-        avatarHtml = `<img src="/static/uploads/${currentUser.profile_image}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
-    }
+    const avatar = role === 'ai' ? '💜' : (currentUser ? currentUser.username[0].toUpperCase() : '?');
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
     msgDiv.innerHTML = `
-        <div class="msg-avatar">${avatarHtml}</div>
+        <div class="msg-avatar">${avatar}</div>
         <div>
             <div class="msg-content">${escapeHtml(content)}</div>
             <div class="msg-time">
@@ -384,15 +300,11 @@ async function sendMessage() {
         // Update mood indicator
         updateMood(data.sentiment);
 
-        currentConversation.message_count = (currentConversation.message_count || 0) + 2;
-
-        // ONLY UPDATE TITLE IF THIS IS THE VERY FIRST MESSAGE
-        if (currentConversation.message_count <= 2) {
-            currentConversation.title = data.user_message.content.substring(0, 80);
-            document.getElementById('chat-title').textContent = currentConversation.title;
-        }
-
+        // Update conversation in list
+        currentConversation.title = data.user_message.content.substring(0, 80);
         currentConversation.risk_level = data.risk_level;
+        currentConversation.message_count = (currentConversation.message_count || 0) + 2;
+        document.getElementById('chat-title').textContent = currentConversation.title;
         renderConversationList();
 
         // Show alert notification if crisis detected
@@ -435,7 +347,6 @@ async function endConversation() {
 function sendVoiceMessage(text) {
     if (!text || !currentConversation) return;
 
-    // The addMessageToUI logic we already updated handles the profile image!
     addMessageToUI('user', text, null, true);
     const typing = document.getElementById('typing-indicator');
     typing.classList.add('visible');
@@ -452,12 +363,6 @@ function sendVoiceMessage(text) {
         typing.classList.remove('visible');
         addMessageToUI('ai', data.ai_message.content, null, true);
         updateMood(data.sentiment);
-
-        currentConversation.message_count = (currentConversation.message_count || 0) + 2;
-        if (currentConversation.message_count <= 2) {
-            currentConversation.title = text.substring(0, 80);
-            document.getElementById('chat-title').textContent = currentConversation.title;
-        }
 
         // Speak the AI response
         if (typeof speakResponse === 'function') {
@@ -484,112 +389,4 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
-
-// ========== Mobile Sidebar ==========
-
-function toggleSidebar() {
-    const sidebar = document.querySelector('.chat-sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('open');
-    }
-}
-
-// Close sidebar on mobile when clicking outside
-document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768) {
-        const sidebar = document.querySelector('.chat-sidebar');
-        const menuBtn = document.querySelector('.mobile-menu-btn');
-        if (sidebar && sidebar.classList.contains('open')) {
-            if (!sidebar.contains(e.target) && (!menuBtn || !menuBtn.contains(e.target))) {
-                sidebar.classList.remove('open');
-            }
-        }
-    }
-});
-
-// ========== Profile Modal ==========
-
-function openProfileModal() {
-    if (!currentUser) return;
-
-    document.getElementById('profile-username').value = currentUser.username || '';
-    document.getElementById('profile-age').value = currentUser.age || '';
-    document.getElementById('profile-gender').value = currentUser.gender || '';
-
-    const preview = document.getElementById('profile-preview-avatar');
-    if (currentUser.profile_image) {
-        preview.innerHTML = `<img src="/static/uploads/${currentUser.profile_image}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-        preview.style.background = 'transparent';
-    } else {
-        preview.innerHTML = currentUser.username ? currentUser.username[0].toUpperCase() : '?';
-        preview.style.background = 'var(--accent-gradient)';
-    }
-
-    document.getElementById('profile-modal').style.display = 'flex';
-}
-
-function closeProfileModal() {
-    document.getElementById('profile-modal').style.display = 'none';
-}
-
-function previewProfileImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const preview = document.getElementById('profile-preview-avatar');
-            preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-            preview.style.background = 'transparent';
-        }
-        reader.readAsDataURL(file);
-    }
-}
-
-async function saveProfile(event) {
-    event.preventDefault();
-
-    const btn = event.target.querySelector('button[type="submit"]');
-    const orgText = btn.textContent;
-    btn.textContent = 'Saving...';
-    btn.disabled = true;
-
-    const formData = new FormData();
-    formData.append('username', document.getElementById('profile-username').value);
-    formData.append('age', document.getElementById('profile-age').value);
-    formData.append('gender', document.getElementById('profile-gender').value);
-
-    const fileInput = document.getElementById('profile-image-input');
-    if (fileInput.files[0]) {
-        formData.append('profile_image', fileInput.files[0]);
-    }
-
-    try {
-        const response = await fetch('/api/profile/update', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to update profile');
-        }
-
-        showToast('Profile updated!', 'success');
-        closeProfileModal();
-
-        // Reload user info to reflect changes instantly
-        await loadUser();
-
-        // Rerender chat messages to show new avatar on existing messages potentially
-        if (currentConversation) {
-            selectConversation(currentConversation.id);
-        }
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        btn.textContent = orgText;
-        btn.disabled = false;
-    }
 }
