@@ -35,7 +35,7 @@ Return ONLY valid JSON."""
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-2.5-flash-lite',
+            'gemini-3.1-flash-lite-preview',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=400,
