@@ -3,13 +3,17 @@
 
 {% block body %}
 <div class="chat-layout">
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="chat-sidebar">
+    <aside class="chat-sidebar" id="chat-sidebar">
         <div class="sidebar-header">
             <div class="logo">
                 <div class="logo-icon">💜</div>
                 <span>HeyMira</span>
             </div>
+            <button class="menu-btn mobile-close-btn" onclick="toggleSidebar()">✕</button>
         </div>
 
         <div class="sidebar-actions">
@@ -76,6 +80,8 @@
     <main class="chat-main">
         <!-- Welcome state (shown when no conversation selected) -->
         <div class="chat-welcome" id="chat-welcome">
+            <button class="menu-btn mobile-open-btn" onclick="toggleSidebar()"
+                style="position:absolute; top: 20px; left: 20px;">☰</button>
             <div class="welcome-icon">💜</div>
             <h2>Hey there 👋</h2>
             <p>Start a new conversation or upload a persona PDF to make me talk like someone you trust.</p>
@@ -86,7 +92,8 @@
         <div id="chat-active" style="display:none;flex:1;display:none;flex-direction:column;height:100vh;">
             <div class="chat-header">
                 <div class="chat-header-left">
-                    <h3 id="chat-title">New Conversation</h3>
+                    <button class="menu-btn mobile-open-btn" onclick="toggleSidebar()">☰</button>
+                    <h3><span id="chat-title">New Conversation</span></h3>
                     <span class="persona-name" id="chat-persona"></span>
                 </div>
                 <div class="chat-header-right">

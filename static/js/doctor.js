@@ -13,7 +13,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Poll for new alerts every 60 seconds
     setInterval(loadAlerts, 60000);
+
+    // Connect Server-Sent Events for real-time alerts
+    connectDoctorSSE();
 });
+
+// Sound for emergency overlay
+const emergencySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+emergencySound.loop = true;
+
+function connectDoctorSSE() {
+    const evtSource = new EventSource('/api/events/stream');
+
+    evtSource.addEventListener('new_alert', (e) => {
+        const data = JSON.parse(e.data);
+        showEmergencyCall(data);
+        loadAlerts();
+    });
+
+    evtSource.addEventListener('connection_accepted', (e) => {
+        const data = JSON.parse(e.data);
+        showToast(`${data.patient_name} accepted your connection request!`, 'success');
+        loadPatients();
+    });
+
+    evtSource.onerror = () => {
+        evtSource.close();
+        setTimeout(connectDoctorSSE, 5000);
+    };
+}
+
+let activeEmergencyPatientId = null;
+let activeEmergencyPatientName = null;
+
+function showEmergencyCall(data) {
+    activeEmergencyPatientId = data.patient_id;
+    activeEmergencyPatientName = data.patient_name;
+    document.getElementById('emergency-patient-name').textContent = data.patient_name;
+    document.getElementById('emergency-message').textContent = '"' + data.message + '"';
+    document.getElementById('emergency-overlay').classList.add('active');
+
+    // Attempt to play sound (browsers may block if no interaction occurred yet)
+    emergencySound.play().catch(e => console.log('Audio autoplay blocked', e));
+}
+
+function dismissEmergency() {
+    document.getElementById('emergency-overlay').classList.remove('active');
+    emergencySound.pause();
+    emergencySound.currentTime = 0;
+}
+
+function acceptEmergency() {
+    dismissEmergency();
+    if (activeEmergencyPatientId) {
+        viewPatient(activeEmergencyPatientId, activeEmergencyPatientName);
+    }
+}
 
 // ========== Tab System ==========
 
@@ -392,6 +447,10 @@ function buildSentimentTimelineChart(timeline) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                x: { type: 'number', easing: 'linear', duration: 1000 },
+                y: { type: 'number', easing: 'easeOutBounce', duration: 1500 }
+            },
             scales: {
                 y: {
                     min: -1, max: 1,
@@ -441,6 +500,12 @@ function buildRiskDistributionChart(distribution) {
             responsive: true,
             maintainAspectRatio: false,
             cutout: '65%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 2000,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -482,6 +547,17 @@ function buildMessageSentimentChart(messages) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                delay: (context) => {
+                    let delay = 0;
+                    if (context.type === 'data' && context.mode === 'default' && !context.dropped) {
+                        delay = context.dataIndex * 50;
+                        context.dropped = true;
+                    }
+                    return delay;
+                },
+                duration: 1000
+            },
             scales: {
                 y: {
                     min: -1, max: 1,
