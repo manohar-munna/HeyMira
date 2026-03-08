@@ -8,6 +8,7 @@ from flask import current_app
 import os
 import io
 import json
+import base64
 
 persona_bp = Blueprint('persona', __name__)
 
@@ -44,20 +45,15 @@ def upload_persona():
     # Analyze personality using AI
     profile = analyze_persona_from_text(person_text, person_name)
 
-    # Handle optional persona image
+    # Handle optional persona image (Convert to Base64 for Vercel read-only filesystem support)
     profile_image_url = None
     if 'persona_image' in request.files:
         img_file = request.files['persona_image']
         if img_file and img_file.filename != '':
-            filename = secure_filename(img_file.filename)
-            unique_filename = f"persona_{current_user.id}_{filename}"
-            
-            persona_uploads_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'personas')
-            os.makedirs(persona_uploads_dir, exist_ok=True)
-            
-            filepath = os.path.join(persona_uploads_dir, unique_filename)
-            img_file.save(filepath)
-            profile_image_url = f"/static/uploads/personas/{unique_filename}"
+            image_bytes = img_file.read()
+            base64_encoded = base64.b64encode(image_bytes).decode('utf-8')
+            mime_type = img_file.mimetype if img_file.mimetype else 'image/jpeg'
+            profile_image_url = f"data:{mime_type};base64,{base64_encoded}"
 
     # Save persona to database
     persona = Persona(
