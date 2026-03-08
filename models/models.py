@@ -100,7 +100,7 @@ class Persona(db.Model):
             'response_length': self.response_length,
             'source_filename': self.source_filename,
             'profile_image': self.profile_image,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 
