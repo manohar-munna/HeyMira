@@ -15,7 +15,19 @@
             </div>
             <span style="color:var(--text-muted);font-size:0.9rem;">Doctor Dashboard</span>
         </div>
-        <div class="dashboard-header-right">
+        <div class="dashboard-header-right" style="gap:16px;">
+            <div class="theme-switcher" style="padding-top:4px;">
+                <button class="theme-btn" data-theme="calm-night" title="Calm Night"
+                    onclick="setTheme('calm-night')">🌙</button>
+                <button class="theme-btn" data-theme="warm-sunset" title="Warm Sunset"
+                    onclick="setTheme('warm-sunset')">🌅</button>
+                <button class="theme-btn" data-theme="ocean-breeze" title="Ocean Breeze"
+                    onclick="setTheme('ocean-breeze')">🌊</button>
+                <button class="theme-btn" data-theme="blossom" title="Blossom" onclick="setTheme('blossom')">🌸</button>
+                <button class="theme-btn" data-theme="forest" title="Forest" onclick="setTheme('forest')">🌿</button>
+                <button class="theme-btn" data-theme="cloudy" title="Cloudy" onclick="setTheme('cloudy')">☁️</button>
+            </div>
+
             <button class="btn btn-icon btn-secondary alert-bell" id="alert-bell" onclick="toggleAlerts()">
                 🔔
                 <span class="alert-count" id="alert-count">0</span>

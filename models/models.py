@@ -16,6 +16,12 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default='patient')  # patient or doctor
     assigned_doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     theme = db.Column(db.String(30), default='calm-night')
+    
+    # New Profile Fields
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(20), nullable=True)
+    profile_image = db.Column(db.String(255), nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     assigned_doctor = db.relationship('User', remote_side=[id], backref='patients')
@@ -42,6 +48,9 @@ class User(UserMixin, db.Model):
             'assigned_doctor_id': self.assigned_doctor_id,
             'assigned_doctor_name': doctor_name,
             'theme': self.theme,
+            'age': self.age,
+            'gender': self.gender,
+            'profile_image': self.profile_image,
             'created_at': self.created_at.isoformat()
         }
 
@@ -61,6 +70,7 @@ class Persona(db.Model):
     supportiveness = db.Column(db.String(50), default='')
     response_length = db.Column(db.String(50), default='')
     source_filename = db.Column(db.String(255), default='')
+    image_filename = db.Column(db.String(255), nullable=True)  # New Persona Image
     raw_text = db.Column(db.Text, default='')  # Store raw extracted text for richer AI context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -92,6 +102,7 @@ class Persona(db.Model):
             'supportiveness': self.supportiveness,
             'response_length': self.response_length,
             'source_filename': self.source_filename,
+            'image_filename': self.image_filename,
             'created_at': self.created_at.isoformat()
         }
 
