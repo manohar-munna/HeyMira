@@ -41,12 +41,14 @@ from routes.chat import chat_bp
 from routes.persona import persona_bp
 from routes.reports import reports_bp
 from routes.doctor import doctor_bp
+from routes.profile import profile_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(persona_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(doctor_bp)
+app.register_blueprint(profile_bp)
 
 
 # Page routes

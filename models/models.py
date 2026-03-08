@@ -14,6 +14,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='patient')  # patient or doctor
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(20), nullable=True)
+    profile_image = db.Column(db.String(255), nullable=True)
     assigned_doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     theme = db.Column(db.String(30), default='calm-night')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -39,6 +42,9 @@ class User(UserMixin, db.Model):
             'username': self.username,
             'email': self.email,
             'role': self.role,
+            'age': self.age,
+            'gender': self.gender,
+            'profile_image': self.profile_image,
             'assigned_doctor_id': self.assigned_doctor_id,
             'assigned_doctor_name': doctor_name,
             'theme': self.theme,

@@ -35,7 +35,11 @@ async function loadDoctorInfo() {
     try {
         const data = await apiCall('/api/auth/me');
         document.getElementById('doc-name').textContent = `Dr. ${data.user.username}`;
-        document.getElementById('doc-avatar').textContent = data.user.username[0].toUpperCase();
+        if (data.user.profile_image) {
+            document.getElementById('doc-avatar').innerHTML = `<img src="${data.user.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        } else {
+            document.getElementById('doc-avatar').textContent = data.user.username[0].toUpperCase();
+        }
         if (data.user.theme) setTheme(data.user.theme);
     } catch (error) {
         window.location.href = '/login';

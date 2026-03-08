@@ -18,7 +18,12 @@ async function loadUser() {
         currentUser = data.user;
         document.getElementById('user-name').textContent = currentUser.username;
         document.getElementById('user-role').textContent = currentUser.role;
-        document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+
+        if (currentUser.profile_image) {
+            document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        } else {
+            document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+        }
 
         // Show doctor connection status
         const docStatus = document.getElementById('doctor-status');
@@ -254,7 +259,7 @@ function addMessageToUI(role, content, timestamp = null, isVoice = false) {
     const area = document.getElementById('messages-area');
     // Use formatTime for chat message timestamps (shows actual clock time)
     const time = timestamp ? formatTime(timestamp) : getCurrentTime();
-    const avatar = role === 'ai' ? '💜' : (currentUser ? currentUser.username[0].toUpperCase() : '?');
+    const avatar = role === 'ai' ? '💜' : (currentUser && currentUser.profile_image ? `<img src="${currentUser.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : (currentUser ? currentUser.username[0].toUpperCase() : '?'));
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
