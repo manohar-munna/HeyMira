@@ -419,22 +419,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-
-// ========== Mobile Sidebar ==========
-function toggleSidebar() {
-    // console.log("Toggle sidebar clicked!");
-    const sidebar = document.getElementById('chat-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-
-    // console.log("Sidebar element found:", !!sidebar);
-    // console.log("Overlay element found:", !!overlay);
-
-    if (sidebar) {
-        sidebar.classList.toggle('sidebar-open');
-        // console.log("Sidebar classes after toggle:", sidebar.className);
-    }
-    if (overlay) {
-        overlay.classList.toggle('active');
-        // console.log("Overlay classes after toggle:", overlay.className);
-    }
-}

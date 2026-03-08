@@ -2,10 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models.models import db, Conversation, Message, Persona, Alert
 from services.ai_service import generate_ai_response
-from services.sentiment_service import analyze_sentiment, get_risk_level
+from services.sentiment_service import analyze_sentiment, detect_crisis, get_risk_level
 from services.report_service import generate_session_report
 from models.models import Report
-from flask import current_app
 from datetime import datetime
 
 chat_bp = Blueprint('chat', __name__)
@@ -42,10 +41,10 @@ def send_message():
     if not conv or conv.user_id != current_user.id:
         return jsonify({'error': 'Conversation not found'}), 404
 
-    # Analyze sentiment of user message (now directly detects crisis agnostic of language)
+    # Analyze sentiment of user message
     sentiment = analyze_sentiment(content)
-    has_crisis = sentiment.get('has_crisis', False)
-    risk = sentiment.get('risk_level', 'low')
+    has_crisis = detect_crisis(content)
+    risk = get_risk_level(sentiment.get('score', 0), has_crisis)
 
     # Save user message
     user_msg = Message(
@@ -97,16 +96,6 @@ def send_message():
             )
             db.session.add(alert)
             conv.risk_level = 'critical'
-            
-            # Send immediate alert ping to doctor via SSE
-            try:
-                current_app.push_event(current_user.assigned_doctor_id, 'new_alert', {
-                    'patient_id': current_user.id,
-                    'patient_name': current_user.username,
-                    'message': content[:200]
-                })
-            except Exception as e:
-                print(f"Failed to push SSE crisis alert: {e}")
 
     db.session.commit()
 

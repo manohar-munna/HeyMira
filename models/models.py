@@ -48,7 +48,7 @@ class User(UserMixin, db.Model):
             'assigned_doctor_id': self.assigned_doctor_id,
             'assigned_doctor_name': doctor_name,
             'theme': self.theme,
-            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
+            'created_at': self.created_at.isoformat()
         }
 
 
@@ -100,7 +100,7 @@ class Persona(db.Model):
             'response_length': self.response_length,
             'source_filename': self.source_filename,
             'profile_image': self.profile_image,
-            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
+            'created_at': self.created_at.isoformat()
         }
 
 
@@ -126,8 +126,8 @@ class Conversation(db.Model):
             'user_id': self.user_id,
             'persona_id': self.persona_id,
             'title': self.title,
-            'started_at': self.started_at.isoformat() if hasattr(self.started_at, 'isoformat') else str(self.started_at) if self.started_at else None,
-            'ended_at': self.ended_at.isoformat() if hasattr(self.ended_at, 'isoformat') else str(self.ended_at) if self.ended_at else None,
+            'started_at': self.started_at.isoformat(),
+            'ended_at': self.ended_at.isoformat() if self.ended_at else None,
             'summary': self.summary,
             'sentiment_score': self.sentiment_score,
             'risk_level': self.risk_level,
@@ -152,7 +152,7 @@ class Message(db.Model):
             'conversation_id': self.conversation_id,
             'role': self.role,
             'content': self.content,
-            'timestamp': self.timestamp.isoformat() if hasattr(self.timestamp, 'isoformat') else str(self.timestamp) if self.timestamp else None,
+            'timestamp': self.timestamp.isoformat(),
             'sentiment_score': self.sentiment_score,
             'is_voice': self.is_voice
         }
@@ -180,7 +180,7 @@ class Report(db.Model):
             'emotional_trend': self.emotional_trend,
             'risk_level': self.risk_level,
             'ai_summary': self.ai_summary,
-            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
+            'created_at': self.created_at.isoformat()
         }
 
 

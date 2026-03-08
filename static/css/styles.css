@@ -1569,8 +1569,6 @@ select.form-input {
 @media (max-width: 768px) {
     .chat-layout {
         display: block;
-        grid-template-columns: none;
-        overflow-x: hidden;
     }
 
     .chat-sidebar {
@@ -1580,15 +1578,14 @@ select.form-input {
         bottom: 0;
         width: 300px;
         max-width: 85vw;
-        z-index: 9999;
+        z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
     }
 
     .chat-sidebar.sidebar-open {
-        transform: translateX(0) !important;
-        display: flex !important;
+        transform: translateX(0);
     }
 
     .sidebar-overlay {
@@ -1599,7 +1596,7 @@ select.form-input {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.6);
-        z-index: 9998;
+        z-index: 999;
         backdrop-filter: blur(3px);
     }
 
@@ -1611,26 +1608,8 @@ select.form-input {
         gap: 8px;
     }
 
-    .mobile-open-btn {
+    .mobile-menu-btn {
         display: flex !important;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: var(--text-primary);
-        position: relative;
-        z-index: 998;
-    }
-
-    .mobile-close-btn {
-        display: block !important;
-        background: transparent;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
-        color: var(--text-muted);
     }
 
     .message {
@@ -1663,10 +1642,7 @@ select.form-input {
 }
 
 @media (min-width: 769px) {
-
-    .mobile-open-btn,
-    .mobile-close-btn,
-    .sidebar-overlay {
+    .mobile-menu-btn {
         display: none !important;
     }
 }

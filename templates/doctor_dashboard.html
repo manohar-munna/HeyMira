@@ -16,19 +16,6 @@
             <span style="color:var(--text-muted);font-size:0.9rem;">Doctor Dashboard</span>
         </div>
         <div class="dashboard-header-right">
-            <!-- Theme Switcher -->
-            <div class="theme-switcher" style="margin-right:16px;">
-                <button class="theme-btn" data-theme="calm-night" title="Calm Night"
-                    onclick="setTheme('calm-night')">🌙</button>
-                <button class="theme-btn" data-theme="warm-sunset" title="Warm Sunset"
-                    onclick="setTheme('warm-sunset')">🌅</button>
-                <button class="theme-btn" data-theme="ocean-breeze" title="Ocean Breeze"
-                    onclick="setTheme('ocean-breeze')">🌊</button>
-                <button class="theme-btn" data-theme="blossom" title="Blossom" onclick="setTheme('blossom')">🌸</button>
-                <button class="theme-btn" data-theme="forest" title="Forest" onclick="setTheme('forest')">🌿</button>
-                <button class="theme-btn" data-theme="cloudy" title="Cloudy" onclick="setTheme('cloudy')">☁️</button>
-            </div>
-
             <button class="btn btn-icon btn-secondary alert-bell" id="alert-bell" onclick="toggleAlerts()">
                 🔔
                 <span class="alert-count" id="alert-count">0</span>
@@ -182,55 +169,7 @@
 
 <div class="toast-container" id="toast-container"></div>
 
-<!-- Emergency Call Overlay -->
-<div class="voice-overlay" id="emergency-overlay"
-    style="z-index: 10000; background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(0, 0, 0, 0.98)); backdrop-filter: blur(20px);">
-    <div class="voice-avatar"
-        style="background: white; color: #ef4444; width: 100px; height: 100px; font-size: 3rem; animation: pulse-badge 1s infinite;">
-        🚨</div>
-    <div class="voice-status" style="color: white; font-size: 1.5rem; font-weight: bold; margin-top: 20px;">INCOMING
-        CRITICAL ALERT</div>
-    <div class="voice-transcript" id="emergency-patient-name"
-        style="color: rgba(255, 255, 255, 0.8); font-size: 1.2rem; margin-top: 10px; max-width: 600px;">Patient Name
-    </div>
-    <div class="voice-transcript" id="emergency-message"
-        style="color: white; font-size: 1rem; margin-top: 20px; font-style: italic; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; max-width: 600px;">
-        Message content...</div>
-    <div class="voice-controls" style="margin-top: 40px; gap: 40px;">
-        <button class="voice-end-btn" onclick="dismissEmergency()"
-            style="background: white; color: #ef4444; width: 70px; height: 70px; font-size: 1.5rem;">✕</button>
-        <button class="voice-end-btn" onclick="acceptEmergency()"
-            style="background: #10b981; color: white; width: 70px; height: 70px; font-size: 1.5rem; animation: pulse-badge 2s infinite;">📞</button>
-    </div>
-</div>
-
 <style>
-    .theme-switcher {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .theme-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        border: 2px solid var(--border);
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-    }
-
-    .theme-btn:hover,
-    .theme-btn.active {
-        border-color: var(--accent);
-        transform: scale(1.1);
-    }
-
     .tab-btn {
         padding: 10px 20px;
         background: transparent;
