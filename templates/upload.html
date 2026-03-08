@@ -16,6 +16,20 @@
                 <input type="text" id="person-name" class="form-input" placeholder="Enter the person's name" required>
             </div>
 
+            <div class="form-group" style="margin-bottom:20px;">
+                <label for="persona-image">Persona Image (Optional)</label>
+                <div class="upload-area" id="image-dropzone"
+                    style="margin-top:8px;padding:20px;border:2px dashed var(--border);border-radius:12px;text-align:center;cursor:pointer;"
+                    onclick="document.getElementById('persona-image-input').click()">
+                    <div class="upload-icon">📸</div>
+                    <p style="margin-bottom:8px;">Add a face to this personality</p>
+                    <img id="persona-image-preview" src=""
+                        style="display:none;width:100px;height:100px;object-fit:cover;border-radius:50%;margin:10px auto;border:2px solid var(--border);">
+                </div>
+                <input type="file" id="persona-image-input" name="persona_image" accept="image/*" style="display:none;"
+                    onchange="previewPersonaImage(this)">
+            </div>
+
             <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
                 <div class="drop-icon">📄</div>
                 <h3>Drop PDF here or click to browse</h3>

@@ -241,8 +241,13 @@ function showChatUI() {
     if (currentConversation.persona_id) {
         const opt = document.querySelector(`#persona-select option[value="${currentConversation.persona_id}"]`);
         personaEl.textContent = opt ? `Speaking as ${opt.textContent.split(' — ')[0]}` : '';
+        // Background fetch persona details to render image
+        if (!activePersona || activePersona.id !== currentConversation.persona_id) {
+            fetchPersonaDetails(currentConversation.persona_id);
+        }
     } else {
         personaEl.textContent = '';
+        activePersona = null;
     }
 }
 
@@ -255,11 +260,27 @@ function renderMessages(messages) {
     scrollToBottom();
 }
 
+let activePersona = null;
+async function fetchPersonaDetails(personaId) {
+    try {
+        const res = await apiCall(`/api/persona/${personaId}`);
+        activePersona = res.persona;
+    } catch (e) {
+        activePersona = null;
+    }
+}
+
 function addMessageToUI(role, content, timestamp = null, isVoice = false) {
     const area = document.getElementById('messages-area');
     // Use formatTime for chat message timestamps (shows actual clock time)
     const time = timestamp ? formatTime(timestamp) : getCurrentTime();
-    const avatar = role === 'ai' ? '💜' : (currentUser && currentUser.profile_image ? `<img src="${currentUser.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : (currentUser ? currentUser.username[0].toUpperCase() : '?'));
+
+    let aiAvatar = '💜';
+    if (activePersona && activePersona.profile_image) {
+        aiAvatar = `<img src="${activePersona.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    }
+
+    const avatar = role === 'ai' ? aiAvatar : (currentUser && currentUser.profile_image ? `<img src="${currentUser.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : (currentUser ? currentUser.username[0].toUpperCase() : '?'));
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
@@ -305,11 +326,14 @@ async function sendMessage() {
         // Update mood indicator
         updateMood(data.sentiment);
 
-        // Update conversation in list
-        currentConversation.title = data.user_message.content.substring(0, 80);
+        // Update conversation in list only if it's the first exchange
+        if (!currentConversation.title || currentConversation.title === 'New Conversation' || currentConversation.message_count <= 2) {
+            currentConversation.title = data.user_message.content.substring(0, 80);
+            document.getElementById('chat-title').textContent = currentConversation.title;
+        }
+
         currentConversation.risk_level = data.risk_level;
         currentConversation.message_count = (currentConversation.message_count || 0) + 2;
-        document.getElementById('chat-title').textContent = currentConversation.title;
         renderConversationList();
 
         // Show alert notification if crisis detected

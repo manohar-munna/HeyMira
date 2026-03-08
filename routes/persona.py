@@ -3,6 +3,8 @@ from flask_login import login_required, current_user
 from models.models import db, Persona
 from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages
 from services.ai_service import analyze_persona_from_text
+from werkzeug.utils import secure_filename
+from flask import current_app
 import os
 import io
 import json
@@ -42,6 +44,21 @@ def upload_persona():
     # Analyze personality using AI
     profile = analyze_persona_from_text(person_text, person_name)
 
+    # Handle optional persona image
+    profile_image_url = None
+    if 'persona_image' in request.files:
+        img_file = request.files['persona_image']
+        if img_file and img_file.filename != '':
+            filename = secure_filename(img_file.filename)
+            unique_filename = f"persona_{current_user.id}_{filename}"
+            
+            persona_uploads_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'personas')
+            os.makedirs(persona_uploads_dir, exist_ok=True)
+            
+            filepath = os.path.join(persona_uploads_dir, unique_filename)
+            img_file.save(filepath)
+            profile_image_url = f"/static/uploads/personas/{unique_filename}"
+
     # Save persona to database
     persona = Persona(
         user_id=current_user.id,
@@ -56,6 +73,7 @@ def upload_persona():
         supportiveness=profile.get('supportiveness', ''),
         response_length=profile.get('response_length', ''),
         source_filename=file.filename,
+        profile_image=profile_image_url,
         raw_text=person_text[:10000]  # Store up to 10k chars for richer AI context
     )
     db.session.add(persona)

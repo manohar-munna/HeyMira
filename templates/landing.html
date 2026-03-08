@@ -11,8 +11,17 @@
             <span>HeyMira</span>
         </div>
         <div class="nav-links">
+            {% if current_user.is_authenticated %}
+            <a href="javascript:void(0)" onclick="logout()" class="btn btn-secondary btn-sm">Logout</a>
+            {% if current_user.role == 'doctor' %}
+            <a href="/dashboard" class="btn btn-primary btn-sm">Go to Dashboard</a>
+            {% else %}
+            <a href="/chat" class="btn btn-primary btn-sm">Go to Chat</a>
+            {% endif %}
+            {% else %}
             <a href="/login" class="btn btn-secondary btn-sm">Login</a>
             <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
+            {% endif %}
         </div>
     </nav>
 
@@ -22,8 +31,16 @@
         <p>HeyMira learns the communication style of someone you trust and creates an AI companion that talks just like
             them — warm, empathetic, and always there for you.</p>
         <div class="hero-cta">
+            {% if current_user.is_authenticated %}
+            {% if current_user.role == 'doctor' %}
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard →</a>
+            {% else %}
+            <a href="/chat" class="btn btn-primary">Go to Chat →</a>
+            {% endif %}
+            {% else %}
             <a href="/register" class="btn btn-primary">Start Your Journey →</a>
             <a href="/register?role=doctor" class="btn btn-secondary">I'm a Doctor</a>
+            {% endif %}
         </div>
     </section>
 

@@ -67,6 +67,7 @@ class Persona(db.Model):
     supportiveness = db.Column(db.String(50), default='')
     response_length = db.Column(db.String(50), default='')
     source_filename = db.Column(db.String(255), default='')
+    profile_image = db.Column(db.String(255), nullable=True)
     raw_text = db.Column(db.Text, default='')  # Store raw extracted text for richer AI context
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -98,6 +99,7 @@ class Persona(db.Model):
             'supportiveness': self.supportiveness,
             'response_length': self.response_length,
             'source_filename': self.source_filename,
+            'profile_image': self.profile_image,
             'created_at': self.created_at.isoformat()
         }
 

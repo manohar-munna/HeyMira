@@ -44,6 +44,25 @@ function handleFile(file) {
     nameEl.style.display = 'block';
 }
 
+function previewPersonaImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const preview = document.getElementById('persona-image-preview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+
+            // hide icon and text when image is shown
+            const uploadArea = document.getElementById('image-dropzone');
+            const icon = uploadArea.querySelector('.upload-icon');
+            const text = uploadArea.querySelector('p');
+            if (icon) icon.style.display = 'none';
+            if (text) text.style.display = 'none';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 async function uploadPersona() {
     const personName = document.getElementById('person-name').value.trim();
 
@@ -80,6 +99,11 @@ async function uploadPersona() {
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append('person_name', personName);
+
+    const imageInput = document.getElementById('persona-image-input');
+    if (imageInput.files.length > 0) {
+        formData.append('persona_image', imageInput.files[0]);
+    }
 
     try {
         const response = await fetch('/api/persona/upload', {

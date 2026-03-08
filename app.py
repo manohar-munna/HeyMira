@@ -57,12 +57,15 @@ def favicon():
     # Return a 204 No Content response for favicon to prevent 500 errors on Vercel
     return '', 204
 
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 @app.route('/')
 def landing():
-    if current_user.is_authenticated:
-        if current_user.role == 'doctor':
-            return redirect(url_for('doctor_dashboard'))
-        return redirect(url_for('chat_page'))
     return render_template('landing.html')
 
 
