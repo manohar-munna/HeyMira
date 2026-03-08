@@ -50,6 +50,11 @@ app.register_blueprint(doctor_bp)
 
 
 # Page routes
+@app.route('/favicon.ico')
+def favicon():
+    # Return a 204 No Content response for favicon to prevent 500 errors on Vercel
+    return '', 204
+
 @app.route('/')
 def landing():
     if current_user.is_authenticated:
@@ -100,8 +105,11 @@ def doctor_dashboard():
 
 # Create tables and upload directory
 with app.app_context():
-    db.create_all()
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        db.create_all()
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Could not initialize DB or upload folder (expected on Vercel): {e}")
 
 
 # ========== Server-Sent Events (SSE) ==========
