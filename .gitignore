@@ -1,10 +1,17 @@
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 .Python
 env/
 venv/
 .env
 instance/
 .vscode/
+
+# Database files
+*.db
+*.sqlite3
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep

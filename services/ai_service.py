@@ -145,3 +145,26 @@ Conversation text to analyze:
                 "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7
             }
         }
+
+
+def generate_chat_summary(text):
+    """Generate a brief summary of the events/topics discussed in the chat."""
+    prompt = f"""Analyze the following conversation text and provide a brief summary of the main events, topics, or themes discussed. 
+Keep it concise, around 2-3 sentences. Do not mention the dates, just the events and context.
+
+Conversation text:
+{text[:8000]}"""
+
+    try:
+        response = key_manager.call_with_retry(
+            'gemini-3.1-flash-lite-preview',
+            [{"role": "user", "parts": [{"text": prompt}]}],
+            genai.types.GenerationConfig(
+                max_output_tokens=150,
+                temperature=0.5,
+            )
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"Chat Summary Error: {e}")
+        return "Could not generate summary at this time."

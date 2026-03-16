@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models.models import db, Persona
-from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages
-from services.ai_service import analyze_persona_from_text
+from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages, extract_chat_participants, extract_person_messages_with_dates
+from services.ai_service import analyze_persona_from_text, generate_chat_summary
 from werkzeug.utils import secure_filename
 from flask import current_app
 import os
@@ -11,6 +11,35 @@ import json
 
 persona_bp = Blueprint('persona', __name__)
 
+@persona_bp.route('/api/persona/analyze_chat', methods=['POST'])
+@login_required
+def analyze_chat():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+
+    if not file.filename:
+        return jsonify({'error': 'No file selected'}), 400
+
+    if not file.filename.lower().endswith('.pdf'):
+        return jsonify({'error': 'Only PDF files are supported'}), 400
+
+    # Extract text from PDF
+    text = extract_text_from_pdf(file)
+    if not text:
+        return jsonify({'error': 'Could not extract text from PDF'}), 400
+
+    # Find participants (before cleaning, as cleaning removes dates that help identifying message boundaries, but our regex works on raw text)
+    participants = extract_chat_participants(text)
+    
+    # Generate summary
+    summary = generate_chat_summary(text)
+
+    return jsonify({
+        'participants': participants,
+        'summary': summary
+    }), 200
 
 @persona_bp.route('/api/persona/upload', methods=['POST'])
 @login_required
@@ -35,10 +64,13 @@ def upload_persona():
     if not text:
         return jsonify({'error': 'Could not extract text from PDF'}), 400
 
-    # Clean WhatsApp export format
+    # Get the raw text with dates for chatting context
+    person_text_with_dates = extract_person_messages_with_dates(text, person_name)
+
+    # Clean WhatsApp export format for analysis
     cleaned_text = clean_whatsapp_export(text)
 
-    # Try to extract specific person's messages
+    # Try to extract specific person's messages for analysis (without dates)
     person_text = extract_person_messages(cleaned_text, person_name)
 
     # Analyze personality using AI
@@ -74,7 +106,7 @@ def upload_persona():
         response_length=profile.get('response_length', ''),
         source_filename=file.filename,
         profile_image=profile_image_url,
-        raw_text=person_text[:10000]  # Store up to 10k chars for richer AI context
+        raw_text=person_text_with_dates[:10000]  # Store up to 10k chars with dates for richer AI context
     )
     db.session.add(persona)
     db.session.commit()

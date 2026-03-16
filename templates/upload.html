@@ -9,11 +9,38 @@
         <p>Upload a WhatsApp chat export or conversation PDF to create an AI personality</p>
     </div>
 
-    <div class="upload-card glass-card">
+    <div class="upload-card glass-card" id="step-1-card">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+            <div class="drop-icon">📄</div>
+            <h3>Drop PDF here or click to browse</h3>
+            <p>Supports WhatsApp chat exports and conversation PDFs</p>
+            <div class="file-name" id="file-name"></div>
+        </div>
+        <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelect(this)">
+
+        <div class="upload-progress" id="analyze-progress" style="display:none; margin-top:20px;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="analyze-progress-fill" style="width: 100%; animation: pulse 1.5s infinite;"></div>
+            </div>
+            <div class="progress-text">Analyzing chat participants and summary...</div>
+        </div>
+    </div>
+
+    <div class="upload-card glass-card" id="step-2-card" style="display:none;">
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Chat Summary</label>
+            <div id="chat-summary-box" style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; line-height: 1.5;">
+                <!-- Summary will be populated here -->
+            </div>
+        </div>
+
         <form id="upload-form" onsubmit="return false;">
             <div class="form-group">
-                <label for="person-name">Person's Name</label>
-                <input type="text" id="person-name" class="form-input" placeholder="Enter the person's name" required>
+                <label>Select Person to Recreate</label>
+                <div id="participants-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                    <!-- Participants radio buttons will be populated here -->
+                </div>
+                <input type="text" id="person-name" class="form-input" placeholder="Or enter a custom name manually" style="margin-top: 15px;">
             </div>
 
             <div class="form-group" style="margin-bottom:20px;">
@@ -30,14 +57,6 @@
                     onchange="previewPersonaImage(this)">
             </div>
 
-            <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
-                <div class="drop-icon">📄</div>
-                <h3>Drop PDF here or click to browse</h3>
-                <p>Supports WhatsApp chat exports and conversation PDFs</p>
-                <div class="file-name" id="file-name"></div>
-            </div>
-            <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelect(this)">
-
             <div class="upload-progress" id="upload-progress">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -45,9 +64,12 @@
                 <div class="progress-text" id="progress-text">Analyzing personality...</div>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" id="upload-btn"
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" id="upload-btn"
                 onclick="uploadPersona()">
-                🧠 Analyze & Create Persona
+                🧠 Create Persona
+            </button>
+            <button type="button" class="btn" style="width:100%;justify-content:center;margin-top:10px;background:transparent;border:1px solid var(--border);color:var(--text-primary);" onclick="resetUpload()">
+                Cancel
             </button>
         </form>
     </div>
@@ -75,6 +97,13 @@
 </div>
 
 <div class="toast-container" id="toast-container"></div>
+<style>
+    @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}

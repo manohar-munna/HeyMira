@@ -44,6 +44,20 @@ def clean_whatsapp_export(text):
     return text
 
 
+def extract_chat_participants(text):
+    """Extract participant names from a raw WhatsApp chat export."""
+    participants = set()
+    lines = text.split('\n')
+    for line in lines:
+        match = re.match(r'^\[?\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}[,\s]+\d{1,2}:\d{2}(?::\d{2})?[\s\u202f]*[a-zA-Z]{0,2}\]?\s*[\-]?\s*(.*?):\s*(.*)', line)
+        if match:
+            name = match.group(1).strip()
+            # Ignore common system messages
+            if not re.search(r'(messages and calls|changed the subject|left|added|security code)', name, re.IGNORECASE):
+                participants.add(name)
+    return list(participants)
+
+
 def extract_person_messages(text, person_name):
     """Extract messages from a specific person in chat exports."""
     lines = text.split('\n')
@@ -59,4 +73,15 @@ def extract_person_messages(text, person_name):
                 if msg and len(msg) > 1:
                     person_messages.append(msg)
     
+    return '\n'.join(person_messages) if person_messages else text
+
+def extract_person_messages_with_dates(text, person_name):
+    """Extract full lines (including dates) from a specific person in chat exports."""
+    lines = text.split('\n')
+    person_messages = []
+    
+    for line in lines:
+        if person_name.lower() in line.lower() and ':' in line:
+            person_messages.append(line.strip())
+            
     return '\n'.join(person_messages) if person_messages else text

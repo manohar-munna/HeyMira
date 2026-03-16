@@ -37,11 +37,109 @@ function handleFileSelect(input) {
     }
 }
 
-function handleFile(file) {
+async function handleFile(file) {
     selectedFile = file;
     const nameEl = document.getElementById('file-name');
     nameEl.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
     nameEl.style.display = 'block';
+
+    // Start analysis automatically
+    await analyzeChat();
+}
+
+async function analyzeChat() {
+    if (!selectedFile) return;
+
+    const analyzeProgress = document.getElementById('analyze-progress');
+    analyzeProgress.style.display = 'block';
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+        const response = await fetch('/api/persona/analyze_chat', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        analyzeProgress.style.display = 'none';
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to analyze chat');
+        }
+
+        // Show step 2
+        document.getElementById('step-1-card').style.display = 'none';
+        document.getElementById('step-2-card').style.display = 'block';
+
+        // Populate summary
+        document.getElementById('chat-summary-box').innerHTML = `<strong>Chat Summary:</strong><br/>${data.summary || 'No summary available.'}`;
+
+        // Populate participants
+        const participantsList = document.getElementById('participants-list');
+        participantsList.innerHTML = '';
+        
+        if (data.participants && data.participants.length > 0) {
+            data.participants.forEach((p, index) => {
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
+                label.style.cursor = 'pointer';
+                
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'participant_radio';
+                radio.value = p;
+                if (index === 0) radio.checked = true; // Auto check first
+                
+                radio.onchange = () => {
+                    document.getElementById('person-name').value = p;
+                };
+
+                // Initialize input value if first
+                if (index === 0) {
+                    document.getElementById('person-name').value = p;
+                }
+
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(p));
+                participantsList.appendChild(label);
+            });
+        } else {
+            participantsList.innerHTML = '<em>No participants detected automatically. Please enter name manually.</em>';
+        }
+
+    } catch (error) {
+        analyzeProgress.style.display = 'none';
+        showToast(error.message, 'error');
+        selectedFile = null;
+        document.getElementById('file-name').style.display = 'none';
+        document.getElementById('file-input').value = '';
+    }
+}
+
+function resetUpload() {
+    selectedFile = null;
+    document.getElementById('file-name').style.display = 'none';
+    document.getElementById('file-input').value = '';
+    document.getElementById('step-1-card').style.display = 'block';
+    document.getElementById('step-2-card').style.display = 'none';
+    document.getElementById('persona-result').style.display = 'none';
+    document.getElementById('person-name').value = '';
+    
+    // Reset image preview
+    const preview = document.getElementById('persona-image-preview');
+    preview.src = '';
+    preview.style.display = 'none';
+    document.getElementById('persona-image-input').value = '';
+    
+    const uploadArea = document.getElementById('image-dropzone');
+    const icon = uploadArea.querySelector('.upload-icon');
+    const text = uploadArea.querySelector('p');
+    if (icon) icon.style.display = 'block';
+    if (text) text.style.display = 'block';
 }
 
 function previewPersonaImage(input) {
