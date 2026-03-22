@@ -148,7 +148,7 @@ function startVoiceCall() {
         try {
             recognition.start();
             setCallStatus('listening');
-            document.getElementById('wa-user-text').textContent = 'Speak naturally — I'm here for you';
+            document.getElementById('wa-user-text').textContent = "Speak naturally — I'm here for you";
             document.getElementById('wa-ai-text').textContent = 'Connected';
         } catch (e) {
             showToast('Could not start voice recognition', 'error');
