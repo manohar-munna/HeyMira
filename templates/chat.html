@@ -28,11 +28,16 @@
 
         <!-- Persona selector -->
         <div style="padding: 0 20px 12px;">
-            <select class="form-input" id="persona-select" style="font-size:0.85rem;padding:8px 12px;">
+            <select class="form-input" id="persona-select" style="font-size:0.85rem;padding:8px 12px; margin-bottom: 8px;">
                 <option value="">No persona (default AI)</option>
+            </select>
+            <select class="form-input" id="voice-select" style="font-size:0.85rem;padding:8px 12px;">
+                <option value="">Default AI Voice</option>
             </select>
         </div>
 
+        <!-- Connection Requests (patient only) -->
+        <div id="connection-requests" style="display:none;padding:0 12px 8px;"></div>
 
         <!-- Conversations -->
         <div class="conversation-list" id="conversation-list">
@@ -61,7 +66,8 @@
                 <div class="user-avatar" id="user-avatar">?</div>
                 <div class="user-info">
                     <div class="user-name" id="user-name">Loading...</div>
-                    <div class="user-role" id="user-role">user</div>
+                    <div class="user-role" id="user-role">patient</div>
+                    <div id="doctor-status" style="font-size:0.7rem;"></div>
                 </div>
                 <button class="btn btn-sm btn-secondary" onclick="logout()"
                     style="padding:6px 10px;font-size:0.75rem;">⏎</button>
@@ -80,22 +86,35 @@
         </div>
 
         <!-- Active chat (hidden initially) -->
-        <div id="chat-active" style="display:none;flex:1;display:none;flex-direction:column;height:100vh;">
-            <div class="chat-header">
+        <div id="chat-active" style="display:none;flex:1;flex-direction:column;height:100vh;">
+            <div class="chat-header whatsapp-header">
                 <div class="chat-header-left">
-                    <h3 id="chat-title">New Conversation</h3>
-                    <span class="persona-name" id="chat-persona"></span>
+                    <div class="wa-dp-container" onclick="triggerPhotoUpload()" title="Click to edit photo">
+                        <div class="wa-dp" id="wa-chat-dp">💜</div>
+                        <div class="wa-dp-edit-overlay">📷</div>
+                    </div>
+                    <div class="wa-name-info">
+                        <h3 id="chat-title">New Conversation</h3>
+                        <span class="persona-name" id="chat-persona"></span>
+                    </div>
                 </div>
                 <div class="chat-header-right">
-                    <button class="btn btn-icon btn-secondary voice-btn" id="voice-btn" onclick="toggleVoiceCall()"
+                    <div class="mood-indicator" id="mood-indicator" style="margin-right:15px;display:none;">
+                        <span>😊</span>
+                        <span id="mood-text">Neutral</span>
+                    </div>
+                    <button class="btn btn-icon btn-secondary wa-call-btn" id="voice-btn" onclick="toggleVoiceCall()"
                         title="Voice Call">
-                        🎤
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     </button>
-                    <button class="btn btn-icon btn-secondary" onclick="endConversation()" title="End Chat">
-                        🗑️
+                    <button class="btn btn-icon btn-secondary wa-end-btn" onclick="endConversation()" title="End Session" style="margin-left: 10px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                     </button>
                 </div>
             </div>
+
+            <!-- Hidden input for photo upload -->
+            <input type="file" id="persona-photo-input" style="display:none" accept="image/*" onchange="uploadPersonaPhoto(this)">
 
             <div class="messages-area" id="messages-area">
                 <!-- Messages will be inserted here -->
@@ -109,60 +128,54 @@
 
             <div class="chat-input-area">
                 <div class="chat-input-wrapper">
-                    <input type="text" id="chat-input" placeholder="Type your message..."
+                    <input type="text" id="chat-input" placeholder="Type a message"
                         onkeypress="if(event.key==='Enter')sendMessage()">
-                    <button class="send-btn" onclick="sendMessage()" id="send-btn">➤</button>
+                    <button class="send-btn" onclick="sendMessage()" id="send-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
                 </div>
             </div>
         </div>
     </main>
 </div>
 
-<!-- Voice Call Overlay (WhatsApp-style) -->
-<div class="wa-call-screen" id="voice-overlay">
-    <!-- Encrypted header -->
+<!-- Voice Call Overlay (WhatsApp Style) -->
+<div class="voice-overlay wa-call-screen" id="voice-overlay">
     <div class="wa-call-header">
-        <span class="wa-encrypted">🔒 End-to-end encrypted</span>
+        <span style="font-size:1.1rem;font-weight:600;display:block;margin-bottom:5px;">End-to-end encrypted</span>
+    </div>
+    
+    <div class="wa-call-person">
+        <h2 id="wa-call-name">Someone</h2>
+        <p id="voice-status" style="color:rgba(255,255,255,0.7);">Calling...</p>
     </div>
 
-    <!-- Persona identity -->
-    <div class="wa-call-identity">
-        <div class="wa-call-name" id="wa-call-name">Mira</div>
-        <div class="wa-call-status" id="voice-status">Calling...</div>
+    <div class="wa-call-avatar-container">
+        <div class="wa-call-avatar" id="voice-avatar-wa">💜</div>
+        <div class="wa-call-ripple"></div>
+        <div class="wa-call-ripple" style="animation-delay: 0.5s;"></div>
     </div>
 
-    <!-- Avatar with ripple rings -->
-    <div class="wa-avatar-container">
-        <div class="wa-ripple wa-ripple-1"></div>
-        <div class="wa-ripple wa-ripple-2"></div>
-        <div class="wa-ripple wa-ripple-3"></div>
-        <div class="wa-avatar" id="voice-avatar">💜</div>
+    <div class="voice-transcript-container wa-transcript">
+        <div class="voice-transcript" id="voice-user-transcript" style="color:rgba(255,255,255,0.6);font-size:1.1rem;min-height:1.5rem;font-style:italic;">Speak naturally — I'm here for you</div>
+        <div class="voice-transcript" id="voice-ai-transcript" style="color:white;font-size:1.3rem;font-weight:500;min-height:2rem;margin-top:10px;"></div>
     </div>
 
-    <!-- Live transcripts -->
-    <div class="wa-transcript-area">
-        <div class="wa-transcript wa-transcript-user" id="wa-transcript-user">
-            <span class="wa-transcript-label">You</span>
-            <span class="wa-transcript-text" id="wa-user-text">...</span>
-        </div>
-        <div class="wa-transcript wa-transcript-ai" id="wa-transcript-ai">
-            <span class="wa-transcript-label">AI</span>
-            <span class="wa-transcript-text" id="wa-ai-text">Waiting to connect...</span>
-        </div>
-    </div>
-
-    <!-- Call controls -->
     <div class="wa-call-controls">
-        <button class="wa-ctrl-btn" id="wa-mute-btn" onclick="toggleMute()" title="Mute Microphone">
-            <span class="wa-ctrl-icon">🎤</span>
-            <span class="wa-ctrl-label">Mute</span>
+        <button id="wa-mute-btn" class="wa-call-btn-action" style="background:rgba(255,255,255,0.2);" onclick="toggleMute()">
+            <!-- Mic On -->
+            <svg id="icon-mic-on" viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            <!-- Mic Off -->
+            <svg id="icon-mic-off" style="display:none;" viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
         </button>
-        <button class="wa-ctrl-btn wa-end-btn" onclick="endVoiceCall()" title="End Call">
-            <span class="wa-ctrl-icon">📞</span>
+        <button class="wa-call-end" onclick="endVoiceCall()">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="white" stroke-width="2" fill="none" style="transform: rotate(135deg);"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
         </button>
-        <button class="wa-ctrl-btn" id="wa-speaker-btn" onclick="toggleSpeaker()" title="Speaker">
-            <span class="wa-ctrl-icon">🔊</span>
-            <span class="wa-ctrl-label">Speaker</span>
+        <button id="wa-speaker-btn" class="wa-call-btn-action" style="background:rgba(255,255,255,0.2);" onclick="toggleSpeaker()">
+            <!-- Speaker On -->
+            <svg id="icon-speaker-on" viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <!-- Speaker Off -->
+            <svg id="icon-speaker-off" style="display:none;" viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </button>
     </div>
 </div>

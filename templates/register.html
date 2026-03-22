@@ -7,12 +7,12 @@
     <div class="auth-card glass-card">
         <a href="/" class="back-link">← Back to home</a>
         <h2>Create Account</h2>
-        <p class="auth-subtitle">Join HeyMira and find your perfect companion</p>
+        <p class="auth-subtitle">Join HeyMira to start talking with your companion</p>
 
         <div class="error-message" id="error-msg"></div>
 
         <form id="register-form" onsubmit="return false;">
-
+            <input type="hidden" id="role" value="user">
 
             <div class="form-group">
                 <label for="username">Username</label>

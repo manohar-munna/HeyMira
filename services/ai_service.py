@@ -5,7 +5,7 @@ import google.generativeai as genai
 import json
 
 
-def generate_ai_response(persona, conversation_history, user_message):
+def generate_ai_response(persona, conversation_history, user_message, language="Auto"):
     """Generate a persona-aware AI response for therapy chat."""
 
     # Build persona context
@@ -25,11 +25,6 @@ Here are ACTUAL messages from this person — study how they type:
 Copy their EXACT writing style. Their word choices, abbreviations, emoji use, everything.
 """
 
-        past_events = persona.get_past_events()
-        events_context = ""
-        if past_events:
-            events_context = "\n- SHARED MEMORIES AND PAST EVENTS you should know about and refer to naturally if they come up:\n  * " + "\n  * ".join(past_events)
-
         persona_context = f"""
 You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Style: {persona.speaking_style}
@@ -39,32 +34,25 @@ You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Humor: {persona.humor_level}
 - How supportive: {persona.supportiveness}
 - Message length: {persona.response_length}
-- Their phrases: {', '.join(phrases) if phrases else 'none'}{events_context}
+- Their phrases: {', '.join(phrases) if phrases else 'none'}
 {raw_excerpt}
 NEVER break character. Talk EXACTLY like them.
 """
 
-    system_prompt = f"""You're a close friend having a real text conversation — NOT a therapist, NOT an AI assistant. {persona_context}
+    system_prompt = f"""You're a close friend having a real conversation — NOT a therapist, NOT an AI assistant. {persona_context}
 
-RULES FOR HOW TO TALK:
-1. Keep messages SHORT — 1 to 3 sentences max. Like a real text message.
-2. Sound like a real person. Use casual language, contractions, lowercase sometimes.
-3. Don't use bullet points, numbered lists, or structured formats EVER.
-4. Don't give advice unless asked. Just listen, relate, and ask questions.
-5. Use emojis sparingly and naturally — don't overdo it.
-6. Match the user's energy. If they're chill, be chill. If they're upset, be gentle.
-7. NEVER say things like "I'm here for you" or "That sounds tough" — those are robotic. Instead, be specific.
-8. Ask ONE follow-up question at most. Don't interrogate.
-9. Sometimes just validate with a short reaction before asking anything.
-10. If they mention self-harm or suicide, be caring but mention 988 helpline naturally.
+CRITICAL INSTRUCTIONS FOR LANGUAGE AND TONE:
+1. AUTO-DETECT the language the user is speaking (e.g., English, Telugu, Hindi, Tamil, Malayalam).
+2. ALWAYS respond in the EXACT SAME language they used.
+3. ALWAYS use the English alphabet (Roman script/Transliteration) for your response, even if the language is not English. For example, if they ask "thinnava?" (Telugu), reply "ha thinna, nuvvu thinnava?" using English letters. DO NOT use native scripts like Devanagari, Telugu script, etc.
+4. Keep messages SHORT — 1 to 3 sentences max. Like a real text message or spoken dialogue.
+5. Sound like a real person. Use casual language. Do NOT sound like an AI.
+6. Don't use bullet points, numbered lists, or structured formats EVER.
+7. Don't give advice unless asked. Just listen, relate, and ask questions.
+8. Use emojis sparingly and naturally — don't overdo it.
+9. Match the user's energy. If they're chill, be chill. If they're upset, be gentle.
 
-BAD (robotic): "I understand that must be really difficult for you. It's completely valid to feel that way. Would you like to talk more about what's been bothering you?"
-GOOD (human): "damn that's rough honestly. what happened tho?"
-
-BAD: "I'm here for you. Please know that your feelings are valid and important."
-GOOD: "yo that actually sucks. wanna vent about it?"
-
-You're texting a friend. Keep it real."""
+You're talking to a friend. Keep it real."""
 
     # Build conversation context
     messages_context = ""
@@ -111,19 +99,18 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these
         "empathy": 1-10,
         "assertiveness": 1-10,
         "positivity": 1-10
-    }},
-    "past_events": ["Memory of event 1, e.g. 'We went to the beach last summer'", "Memory 2, e.g. 'Had a fight about the dishes'", "Inside joke about XYZ"]
+    }}
 }}
 
 Conversation text to analyze:
-{text[:25000]}"""
+{text[:8000]}"""
 
     try:
         response = key_manager.call_with_retry(
             'gemini-3.1-flash-lite-preview',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
-                max_output_tokens=2000,
+                max_output_tokens=800,
                 temperature=0.3,
             )
         )
@@ -147,7 +134,6 @@ Conversation text to analyze:
             "humor_level": "subtle",
             "supportiveness": "high",
             "response_length": "moderate",
-            "past_events": [],
             "personality_traits": {
                 "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7
             }

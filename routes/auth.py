@@ -1,6 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
-from models.models import User
+from models.models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,19 +11,25 @@ def register():
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '')
+    role = data.get('role', 'user')
 
     if not username or not email or not password:
         return jsonify({'error': 'All fields are required'}), 400
 
-    if User.get_by_username(username):
+    if role not in ('user', 'doctor'):
+        return jsonify({'error': 'Invalid role'}), 400
+
+    if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
 
-    if User.get_by_email(email):
+    if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already registered'}), 400
 
-    user = User(username=username, email=email, role='user')
+    user = User(username=username, email=email, role=role)
     user.set_password(password)
-    user.save()
+
+    db.session.add(user)
+    db.session.commit()
 
     login_user(user)
     return jsonify({'message': 'Registration successful', 'user': user.to_dict()}), 201
@@ -35,7 +41,7 @@ def login():
     username = data.get('username', '').strip()
     password = data.get('password', '')
 
-    user = User.get_by_username(username)
+    user = User.query.filter_by(username=username).first()
     if not user or not user.check_password(password):
         return jsonify({'error': 'Invalid username or password'}), 401
 
@@ -65,5 +71,5 @@ def update_theme():
     if theme not in valid_themes:
         return jsonify({'error': 'Invalid theme'}), 400
     current_user.theme = theme
-    current_user.save()
+    db.session.commit()
     return jsonify({'message': 'Theme updated', 'theme': theme})
