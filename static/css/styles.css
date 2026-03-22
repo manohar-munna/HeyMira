@@ -944,81 +944,284 @@ select.form-input {
     margin-bottom: 30px;
 }
 
-/* Voice call overlay */
-.voice-overlay {
+/* ============================================
+   WhatsApp-Style Voice Call Screen
+   ============================================ */
+.wa-call-screen {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(20px);
+    background: linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #1a1033 100%);
     z-index: 1000;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 24px;
+    justify-content: space-between;
+    padding: 40px 24px 48px;
+    overflow: hidden;
 }
 
-.voice-overlay.active {
+.wa-call-screen.active {
     display: flex;
+    animation: wa-fadeIn 0.4s ease;
 }
 
-.voice-avatar {
-    width: 120px;
-    height: 120px;
+@keyframes wa-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Subtle background glow */
+.wa-call-screen::before {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: var(--accent-glow);
+    filter: blur(140px);
+    opacity: 0.15;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+/* --- Header --- */
+.wa-call-header {
+    text-align: center;
+}
+
+.wa-encrypted {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.5px;
+}
+
+/* --- Identity --- */
+.wa-call-identity {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.wa-call-name {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+.wa-call-status {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+    transition: color 0.3s;
+}
+
+.wa-call-status.listening {
+    color: #4ade80;
+}
+
+.wa-call-status.thinking {
+    color: #facc15;
+}
+
+.wa-call-status.speaking {
+    color: #60a5fa;
+}
+
+.wa-call-status.reconnecting {
+    color: #f87171;
+}
+
+/* --- Avatar + Ripples --- */
+.wa-avatar-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wa-ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    animation: wa-ripple-pulse 3s ease-in-out infinite;
+}
+
+.wa-ripple-1 {
+    width: 140px;
+    height: 140px;
+    animation-delay: 0s;
+}
+
+.wa-ripple-2 {
+    width: 170px;
+    height: 170px;
+    animation-delay: 0.5s;
+}
+
+.wa-ripple-3 {
+    width: 200px;
+    height: 200px;
+    animation-delay: 1s;
+}
+
+@keyframes wa-ripple-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.6;
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    50% {
+        transform: scale(1.12);
+        opacity: 1;
+        border-color: var(--accent-glow);
+    }
+}
+
+.wa-avatar {
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     background: var(--accent-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 3rem;
-    box-shadow: 0 0 60px var(--accent-glow);
-    animation: voice-glow 2s ease-in-out infinite;
+    box-shadow: 0 0 50px var(--accent-glow), 0 0 100px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
 }
 
-@keyframes voice-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 30px var(--accent-glow);
-    }
-
-    50% {
-        box-shadow: 0 0 80px var(--accent-glow);
-    }
-}
-
-.voice-status {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.voice-transcript {
-    max-width: 500px;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    min-height: 60px;
-}
-
-.voice-controls {
-    display: flex;
-    gap: 16px;
-}
-
-.voice-end-btn {
-    width: 60px;
-    height: 60px;
+.wa-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
+}
+
+/* --- Transcripts --- */
+.wa-transcript-area {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wa-transcript {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    min-height: 48px;
     transition: all 0.3s;
 }
 
-.voice-end-btn:hover {
-    transform: scale(1.1);
+.wa-transcript.active {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.wa-transcript-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.wa-transcript-user .wa-transcript-label {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+
+.wa-transcript-ai .wa-transcript-label {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.wa-transcript-text {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+    word-break: break-word;
+    flex: 1;
+}
+
+/* --- Call Controls --- */
+.wa-call-controls {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.wa-ctrl-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    justify-content: center;
+}
+
+.wa-ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: scale(1.08);
+}
+
+.wa-ctrl-btn.muted {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+.wa-ctrl-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.wa-ctrl-label {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.3px;
+    position: absolute;
+    bottom: -20px;
+    white-space: nowrap;
+}
+
+/* End call button */
+.wa-end-btn {
+    width: 68px;
+    height: 68px;
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 4px 25px rgba(239, 68, 68, 0.35);
+    border-radius: 22px;
+}
+
+.wa-end-btn:hover {
+    box-shadow: 0 6px 35px rgba(239, 68, 68, 0.5);
+    background: linear-gradient(135deg, #f87171, #ef4444) !important;
+}
+
+.wa-end-btn .wa-ctrl-icon {
+    font-size: 1.6rem;
+    transform: rotate(135deg);
 }
 
 /* ============================================

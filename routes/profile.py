@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, current_app, render_template
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from models.models import db, User
+from models.models import User
 
 profile_bp = Blueprint('profile', __name__)
 
@@ -27,7 +27,7 @@ def update_profile():
     
     if username:
         # Check if username exists and is not the current user
-        existing_user = User.query.filter_by(username=username).first()
+        existing_user = User.get_by_username(username)
         if existing_user and existing_user.id != current_user.id:
             return jsonify({'error': 'Username already taken'}), 400
         current_user.username = username
@@ -48,7 +48,6 @@ def update_profile():
             if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 # Generate a unique filename using user ID to prevent overwrites
-                # but allow the user to overwrite their own previous image
                 unique_filename = f"user_{current_user.id}_{filename}"
                 
                 # Ensure profile uploads directory exists
@@ -58,12 +57,12 @@ def update_profile():
                 filepath = os.path.join(profile_uploads_dir, unique_filename)
                 file.save(filepath)
                 
-                # Save the relative URL to the database
+                # Save the relative URL
                 current_user.profile_image = f"/static/uploads/profiles/{unique_filename}"
             else:
                 return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif, webp'}), 400
 
-    db.session.commit()
+    current_user.save()
     
     return jsonify({
         'message': 'Profile updated successfully',

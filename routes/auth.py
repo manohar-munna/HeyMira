@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
-from models.models import db, User
+from models.models import User
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -19,17 +19,15 @@ def register():
     if role not in ('patient', 'doctor'):
         return jsonify({'error': 'Invalid role'}), 400
 
-    if User.query.filter_by(username=username).first():
+    if User.get_by_username(username):
         return jsonify({'error': 'Username already exists'}), 400
 
-    if User.query.filter_by(email=email).first():
+    if User.get_by_email(email):
         return jsonify({'error': 'Email already registered'}), 400
 
     user = User(username=username, email=email, role=role)
     user.set_password(password)
-
-    db.session.add(user)
-    db.session.commit()
+    user.save()
 
     login_user(user)
     return jsonify({'message': 'Registration successful', 'user': user.to_dict()}), 201
@@ -41,7 +39,7 @@ def login():
     username = data.get('username', '').strip()
     password = data.get('password', '')
 
-    user = User.query.filter_by(username=username).first()
+    user = User.get_by_username(username)
     if not user or not user.check_password(password):
         return jsonify({'error': 'Invalid username or password'}), 401
 
@@ -71,5 +69,5 @@ def update_theme():
     if theme not in valid_themes:
         return jsonify({'error': 'Invalid theme'}), 400
     current_user.theme = theme
-    db.session.commit()
+    current_user.save()
     return jsonify({'message': 'Theme updated', 'theme': theme})

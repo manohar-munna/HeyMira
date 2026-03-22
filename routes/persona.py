@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from models.models import db, Persona
+from models.models import Persona
 from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages, extract_chat_participants, extract_person_messages_with_dates
 from services.ai_service import analyze_persona_from_text, generate_chat_summary
 from werkzeug.utils import secure_filename
@@ -30,7 +30,7 @@ def analyze_chat():
     if not text:
         return jsonify({'error': 'Could not extract text from PDF'}), 400
 
-    # Find participants (before cleaning, as cleaning removes dates that help identifying message boundaries, but our regex works on raw text)
+    # Find participants
     participants = extract_chat_participants(text)
     
     # Generate summary
@@ -91,7 +91,7 @@ def upload_persona():
             img_file.save(filepath)
             profile_image_url = f"/static/uploads/personas/{unique_filename}"
 
-    # Save persona to database
+    # Save persona to Firestore
     persona = Persona(
         user_id=current_user.id,
         name=profile.get('name', person_name),
@@ -106,10 +106,9 @@ def upload_persona():
         response_length=profile.get('response_length', ''),
         source_filename=file.filename,
         profile_image=profile_image_url,
-        raw_text=person_text_with_dates[:10000]  # Store up to 10k chars with dates for richer AI context
+        raw_text=person_text_with_dates[:10000]
     )
-    db.session.add(persona)
-    db.session.commit()
+    persona.save()
 
     return jsonify({
         'message': 'Persona created successfully',
@@ -120,14 +119,14 @@ def upload_persona():
 @persona_bp.route('/api/persona/list', methods=['GET'])
 @login_required
 def list_personas():
-    personas = Persona.query.filter_by(user_id=current_user.id).order_by(Persona.created_at.desc()).all()
+    personas = Persona.query_by_user_ordered(current_user.id)
     return jsonify({'personas': [p.to_dict() for p in personas]})
 
 
 @persona_bp.route('/api/persona/<int:persona_id>', methods=['GET'])
 @login_required
 def get_persona(persona_id):
-    persona = Persona.query.get(persona_id)
+    persona = Persona.get_by_id(persona_id)
     if not persona or persona.user_id != current_user.id:
         return jsonify({'error': 'Persona not found'}), 404
     return jsonify({'persona': persona.to_dict()})
@@ -136,9 +135,8 @@ def get_persona(persona_id):
 @persona_bp.route('/api/persona/<int:persona_id>', methods=['DELETE'])
 @login_required
 def delete_persona(persona_id):
-    persona = Persona.query.get(persona_id)
+    persona = Persona.get_by_id(persona_id)
     if not persona or persona.user_id != current_user.id:
         return jsonify({'error': 'Persona not found'}), 404
-    db.session.delete(persona)
-    db.session.commit()
+    persona.delete()
     return jsonify({'message': 'Persona deleted'})

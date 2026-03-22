@@ -125,13 +125,52 @@
     </main>
 </div>
 
-<!-- Voice Call Overlay -->
-<div class="voice-overlay" id="voice-overlay">
-    <div class="voice-avatar" id="voice-avatar">💜</div>
-    <div class="voice-status" id="voice-status">Listening...</div>
-    <div class="voice-transcript" id="voice-transcript">Speak naturally — I'm here for you</div>
-    <div class="voice-controls">
-        <button class="voice-end-btn" onclick="endVoiceCall()">✕</button>
+<!-- Voice Call Overlay (WhatsApp-style) -->
+<div class="wa-call-screen" id="voice-overlay">
+    <!-- Encrypted header -->
+    <div class="wa-call-header">
+        <span class="wa-encrypted">🔒 End-to-end encrypted</span>
+    </div>
+
+    <!-- Persona identity -->
+    <div class="wa-call-identity">
+        <div class="wa-call-name" id="wa-call-name">Mira</div>
+        <div class="wa-call-status" id="voice-status">Calling...</div>
+    </div>
+
+    <!-- Avatar with ripple rings -->
+    <div class="wa-avatar-container">
+        <div class="wa-ripple wa-ripple-1"></div>
+        <div class="wa-ripple wa-ripple-2"></div>
+        <div class="wa-ripple wa-ripple-3"></div>
+        <div class="wa-avatar" id="voice-avatar">💜</div>
+    </div>
+
+    <!-- Live transcripts -->
+    <div class="wa-transcript-area">
+        <div class="wa-transcript wa-transcript-user" id="wa-transcript-user">
+            <span class="wa-transcript-label">You</span>
+            <span class="wa-transcript-text" id="wa-user-text">...</span>
+        </div>
+        <div class="wa-transcript wa-transcript-ai" id="wa-transcript-ai">
+            <span class="wa-transcript-label">AI</span>
+            <span class="wa-transcript-text" id="wa-ai-text">Waiting to connect...</span>
+        </div>
+    </div>
+
+    <!-- Call controls -->
+    <div class="wa-call-controls">
+        <button class="wa-ctrl-btn" id="wa-mute-btn" onclick="toggleMute()" title="Mute Microphone">
+            <span class="wa-ctrl-icon">🎤</span>
+            <span class="wa-ctrl-label">Mute</span>
+        </button>
+        <button class="wa-ctrl-btn wa-end-btn" onclick="endVoiceCall()" title="End Call">
+            <span class="wa-ctrl-icon">📞</span>
+        </button>
+        <button class="wa-ctrl-btn" id="wa-speaker-btn" onclick="toggleSpeaker()" title="Speaker">
+            <span class="wa-ctrl-icon">🔊</span>
+            <span class="wa-ctrl-label">Speaker</span>
+        </button>
     </div>
 </div>
 

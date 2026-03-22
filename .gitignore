@@ -8,9 +8,13 @@ venv/
 instance/
 .vscode/
 
+
 # Database files
 *.db
 *.sqlite3
+
+# Firebase credentials (NEVER commit this!)
+firebase-credentials.json
 
 # Uploads
 static/uploads/*
