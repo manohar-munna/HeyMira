@@ -234,6 +234,7 @@ class Persona:
         self.source_filename = kwargs.get('source_filename', '')
         self.profile_image = kwargs.get('profile_image')
         self.raw_text = kwargs.get('raw_text', '')
+        self.past_events = kwargs.get('past_events', '[]')
         self.created_at = kwargs.get('created_at', datetime.utcnow())
 
     def get_traits(self):
@@ -245,6 +246,12 @@ class Persona:
     def get_phrases(self):
         try:
             return json.loads(self.common_phrases) if isinstance(self.common_phrases, str) else self.common_phrases
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def get_past_events(self):
+        try:
+            return json.loads(self.past_events) if isinstance(self.past_events, str) else self.past_events
         except (json.JSONDecodeError, TypeError):
             return []
 
@@ -263,6 +270,7 @@ class Persona:
             'response_length': self.response_length,
             'source_filename': self.source_filename,
             'profile_image': self.profile_image,
+            'past_events': self.get_past_events(),
             'created_at': _to_iso(self.created_at),
         }
 
@@ -283,6 +291,7 @@ class Persona:
             'source_filename': self.source_filename,
             'profile_image': self.profile_image,
             'raw_text': self.raw_text,
+            'past_events': self.past_events,
             'created_at': self.created_at,
         }
 

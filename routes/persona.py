@@ -106,6 +106,7 @@ def upload_persona():
         response_length=profile.get('response_length', ''),
         source_filename=file.filename,
         profile_image=profile_image_url,
+        past_events=json.dumps(profile.get('past_events', [])),
         raw_text=person_text_with_dates[:10000]
     )
     persona.save()

@@ -25,6 +25,11 @@ Here are ACTUAL messages from this person — study how they type:
 Copy their EXACT writing style. Their word choices, abbreviations, emoji use, everything.
 """
 
+        past_events = persona.get_past_events()
+        events_context = ""
+        if past_events:
+            events_context = "\n- SHARED MEMORIES AND PAST EVENTS you should know about and refer to naturally if they come up:\n  * " + "\n  * ".join(past_events)
+
         persona_context = f"""
 You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Style: {persona.speaking_style}
@@ -34,7 +39,7 @@ You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Humor: {persona.humor_level}
 - How supportive: {persona.supportiveness}
 - Message length: {persona.response_length}
-- Their phrases: {', '.join(phrases) if phrases else 'none'}
+- Their phrases: {', '.join(phrases) if phrases else 'none'}{events_context}
 {raw_excerpt}
 NEVER break character. Talk EXACTLY like them.
 """
@@ -106,18 +111,19 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these
         "empathy": 1-10,
         "assertiveness": 1-10,
         "positivity": 1-10
-    }}
+    }},
+    "past_events": ["Memory of event 1, e.g. 'We went to the beach last summer'", "Memory 2, e.g. 'Had a fight about the dishes'", "Inside joke about XYZ"]
 }}
 
 Conversation text to analyze:
-{text[:8000]}"""
+{text[:25000]}"""
 
     try:
         response = key_manager.call_with_retry(
             'gemini-3.1-flash-lite-preview',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
-                max_output_tokens=800,
+                max_output_tokens=2000,
                 temperature=0.3,
             )
         )
@@ -141,6 +147,7 @@ Conversation text to analyze:
             "humor_level": "subtle",
             "supportiveness": "high",
             "response_length": "moderate",
+            "past_events": [],
             "personality_traits": {
                 "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7
             }
