@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, redirect, url_for
+from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from models.models import User
 
@@ -11,13 +11,9 @@ def register():
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '')
-    role = data.get('role', 'patient')
 
     if not username or not email or not password:
         return jsonify({'error': 'All fields are required'}), 400
-
-    if role not in ('patient', 'doctor'):
-        return jsonify({'error': 'Invalid role'}), 400
 
     if User.get_by_username(username):
         return jsonify({'error': 'Username already exists'}), 400
@@ -25,7 +21,7 @@ def register():
     if User.get_by_email(email):
         return jsonify({'error': 'Email already registered'}), 400
 
-    user = User(username=username, email=email, role=role)
+    user = User(username=username, email=email, role='user')
     user.set_password(password)
     user.save()
 

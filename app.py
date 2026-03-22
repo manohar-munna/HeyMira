@@ -40,29 +40,28 @@ def unauthorized():
 from routes.auth import auth_bp
 from routes.chat import chat_bp
 from routes.persona import persona_bp
-from routes.reports import reports_bp
-from routes.doctor import doctor_bp
 from routes.profile import profile_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(persona_bp)
-app.register_blueprint(reports_bp)
-app.register_blueprint(doctor_bp)
 app.register_blueprint(profile_bp)
 
 
 # Page routes
 @app.route('/favicon.ico')
 def favicon():
-    # Return a 204 No Content response for favicon to prevent 500 errors on Vercel
     return '', 204
 
 @app.after_request
 def add_header(response):
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    # Cache static assets aggressively, don't cache API responses
+    if flask_request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+    else:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 @app.route('/')
@@ -73,8 +72,6 @@ def landing():
 @app.route('/login')
 def login_page():
     if current_user.is_authenticated:
-        if current_user.role == 'doctor':
-            return redirect(url_for('doctor_dashboard'))
         return redirect(url_for('chat_page'))
     return render_template('login.html')
 
@@ -100,13 +97,11 @@ def upload_page():
     return render_template('upload.html')
 
 
-@app.route('/dashboard')
-def doctor_dashboard():
+@app.route('/profile')
+def profile_page():
     if not current_user.is_authenticated:
         return redirect(url_for('login_page'))
-    if current_user.role != 'doctor':
-        return redirect(url_for('chat_page'))
-    return render_template('doctor_dashboard.html')
+    return render_template('profile.html')
 
 
 # Create upload directory
@@ -114,64 +109,6 @@ try:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 except Exception as e:
     print(f"Warning: Could not initialize upload folder: {e}")
-
-
-# ========== Server-Sent Events (SSE) ==========
-# Simple in-memory event system for real-time updates
-user_event_queues = {}  # user_id -> list of Queue objects
-event_lock = threading.Lock()
-
-def push_event(user_id, event_type, data):
-    """Push an event to all SSE connections for a user."""
-    with event_lock:
-        queues = user_event_queues.get(user_id, [])
-        for q in queues:
-            try:
-                q.put_nowait({'type': event_type, 'data': data})
-            except:
-                pass
-
-# Make push_event available to routes
-app.push_event = push_event
-
-@app.route('/api/events/stream')
-def event_stream():
-    if not current_user.is_authenticated:
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    user_id = current_user.id
-    q = Queue(maxsize=50)
-
-    with event_lock:
-        if user_id not in user_event_queues:
-            user_event_queues[user_id] = []
-        user_event_queues[user_id].append(q)
-
-    def generate():
-        try:
-            while True:
-                try:
-                    event = q.get(timeout=30)
-                    yield f"event: {event['type']}\ndata: {json.dumps(event['data'])}\n\n"
-                except:
-                    # Send keepalive
-                    yield f": keepalive\n\n"
-        finally:
-            with event_lock:
-                if user_id in user_event_queues:
-                    user_event_queues[user_id].remove(q)
-                    if not user_event_queues[user_id]:
-                        del user_event_queues[user_id]
-
-    return Response(
-        generate(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive'
-        }
-    )
 
 
 if __name__ == '__main__':
