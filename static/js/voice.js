@@ -107,7 +107,7 @@ function startVoiceCall() {
                     try { recognition.stop(); } catch (e) { }
                     sendVoiceMessage(msg);
                 }
-            }, 1500);
+            }, 500);
         }
     };
 
@@ -316,16 +316,25 @@ function speakResponse(text) {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Pick the best voice
+    // Pick the selected voice or best voice
     const voices = synthesis.getVoices();
-    const preferredVoice =
-        voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
-        voices.find(v => v.lang === 'en-IN') ||
-        voices.find(v => v.lang === 'en-US' && v.name.includes('Female')) ||
-        voices.find(v => v.lang.startsWith('en'));
+    const voiceSelect = document.getElementById('voice-select');
+    let selectedVoice = null;
+    
+    if (voiceSelect && voiceSelect.value) {
+        selectedVoice = voices.find(v => v.voiceURI === voiceSelect.value);
+    }
+    
+    if (!selectedVoice) {
+        selectedVoice =
+            voices.find(v => v.lang === 'en-IN') ||
+            voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
+            voices.find(v => v.lang === 'en-US' && v.name.includes('Female')) ||
+            voices.find(v => v.lang.startsWith('en'));
+    }
 
-    if (preferredVoice) {
-        utterance.voice = preferredVoice;
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
     }
 
     utterance.onend = () => {
@@ -356,6 +365,41 @@ function speakResponse(text) {
 // ═══════════════════════════════════════════
 //  INIT: Load voices (async in some browsers)
 // ═══════════════════════════════════════════
-if (synthesis) {
-    synthesis.onvoiceschanged = () => synthesis.getVoices();
+
+function populateVoiceList() {
+    if (!synthesis) return;
+    const voices = synthesis.getVoices();
+    const voiceSelect = document.getElementById('voice-select');
+    if (!voiceSelect) return;
+
+    const currentSelection = voiceSelect.value;
+    voiceSelect.innerHTML = '';
+
+    // Prioritize Indian English voices
+    let indianVoices = voices.filter(v => v.lang === 'en-IN' || v.name.includes('India'));
+    let otherEngVoices = voices.filter(v => v.lang.startsWith('en') && v.lang !== 'en-IN' && !v.name.includes('India'));
+
+    const combinedVoices = [...indianVoices, ...otherEngVoices];
+
+    combinedVoices.forEach((voice) => {
+        const option = document.createElement('option');
+        option.textContent = `${voice.name} (${voice.lang})`;
+        option.value = voice.voiceURI;
+        voiceSelect.appendChild(option);
+    });
+
+    if (currentSelection && combinedVoices.find(v => v.voiceURI === currentSelection)) {
+        voiceSelect.value = currentSelection;
+    } else if (indianVoices.length > 0) {
+        voiceSelect.value = indianVoices[0].voiceURI;
+    }
 }
+
+if (synthesis) {
+    synthesis.onvoiceschanged = populateVoiceList;
+}
+
+// Call initially in case they are already loaded
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(populateVoiceList, 500);
+});
