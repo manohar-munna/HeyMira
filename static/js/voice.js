@@ -1,0 +1,361 @@
+// HeyMira - Voice Call Interface (WhatsApp-Style)
+// Uses Web Speech API: SpeechRecognition (STT) + speechSynthesis (TTS)
+
+let recognition = null;
+let synthesis = window.speechSynthesis;
+let isVoiceActive = false;
+let isSpeaking = false;
+let isMuted = false;
+let isSpeakerOff = false;
+
+// ═══════════════════════════════════════════
+//  TOGGLE / START / END
+// ═══════════════════════════════════════════
+
+function toggleVoiceCall() {
+    if (isVoiceActive) {
+        endVoiceCall();
+    } else {
+        startVoiceCall();
+    }
+}
+
+function startVoiceCall() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        showToast('Voice calls require Chrome or Edge browser', 'error');
+        return;
+    }
+
+    if (!currentConversation) {
+        showToast('Start a conversation first', 'error');
+        return;
+    }
+
+    isVoiceActive = true;
+    isMuted = false;
+    isSpeakerOff = false;
+    isSpeaking = false;
+
+    // --- Populate call screen identity ---
+    const personaSelect = document.getElementById('persona-select');
+    const selectedOption = personaSelect ? personaSelect.selectedOptions[0] : null;
+    let personaName = 'Mira';
+    if (selectedOption && selectedOption.value) {
+        personaName = selectedOption.textContent.split(' — ')[0];
+    }
+    document.getElementById('wa-call-name').textContent = personaName;
+
+    // Set avatar image if available
+    const avatarEl = document.getElementById('voice-avatar');
+    if (typeof activePersona !== 'undefined' && activePersona && activePersona.profile_image) {
+        avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">`;
+    } else {
+        avatarEl.innerHTML = '💜';
+    }
+
+    // Reset UI
+    setCallStatus('calling');
+    document.getElementById('wa-user-text').textContent = '...';
+    document.getElementById('wa-ai-text').textContent = 'Waiting to connect...';
+    resetMuteUI();
+    resetSpeakerUI();
+
+    // Show the overlay
+    document.getElementById('voice-overlay').classList.add('active');
+    document.getElementById('voice-btn').classList.add('active');
+
+    // --- Setup Speech Recognition ---
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event) => {
+        if (isMuted) return;
+
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+
+        // Show live user transcript
+        const display = finalTranscript || interimTranscript;
+        if (display.trim()) {
+            document.getElementById('wa-user-text').textContent = display.trim();
+            document.getElementById('wa-transcript-user').classList.add('active');
+        }
+
+        // When we have a final result, wait briefly then send
+        if (finalTranscript.trim().length > 0) {
+            clearTimeout(recognition._sendTimeout);
+            recognition._sendTimeout = setTimeout(() => {
+                if (finalTranscript.trim()) {
+                    const msg = finalTranscript.trim();
+                    finalTranscript = '';
+                    setCallStatus('thinking');
+                    document.getElementById('wa-transcript-user').classList.remove('active');
+
+                    // Pause recognition while AI responds
+                    try { recognition.stop(); } catch (e) { }
+                    sendVoiceMessage(msg);
+                }
+            }, 1500);
+        }
+    };
+
+    recognition.onend = () => {
+        // Auto-restart if call is active and we're not speaking
+        if (isVoiceActive && !isSpeaking) {
+            try {
+                setTimeout(() => {
+                    if (isVoiceActive && !isSpeaking && !isMuted) {
+                        recognition.start();
+                        setCallStatus('listening');
+                    }
+                }, 300);
+            } catch (e) { }
+        }
+    };
+
+    recognition.onerror = (event) => {
+        if (event.error === 'no-speech') {
+            document.getElementById('wa-user-text').textContent = "I'm listening... take your time";
+        } else if (event.error === 'network') {
+            setCallStatus('reconnecting');
+            // Auto-retry after a brief pause
+            setTimeout(() => {
+                if (isVoiceActive && !isSpeaking) {
+                    try { recognition.start(); } catch (e) { }
+                    setCallStatus('listening');
+                }
+            }, 2000);
+        } else if (event.error !== 'aborted') {
+            console.error('Recognition error:', event.error);
+        }
+    };
+
+    // Brief "Calling..." delay then start listening
+    setTimeout(() => {
+        if (!isVoiceActive) return;
+        try {
+            recognition.start();
+            setCallStatus('listening');
+            document.getElementById('wa-user-text').textContent = 'Speak naturally — I'm here for you';
+            document.getElementById('wa-ai-text').textContent = 'Connected';
+        } catch (e) {
+            showToast('Could not start voice recognition', 'error');
+            endVoiceCall();
+        }
+    }, 800);
+}
+
+function endVoiceCall() {
+    isVoiceActive = false;
+    isSpeaking = false;
+    isMuted = false;
+    isSpeakerOff = false;
+
+    if (recognition) {
+        try { recognition.stop(); } catch (e) { }
+        recognition = null;
+    }
+
+    synthesis.cancel();
+
+    document.getElementById('voice-overlay').classList.remove('active');
+    document.getElementById('voice-btn').classList.remove('active');
+}
+
+
+// ═══════════════════════════════════════════
+//  STATUS MANAGEMENT
+// ═══════════════════════════════════════════
+
+function setCallStatus(status) {
+    const statusEl = document.getElementById('voice-status');
+    // Remove all status classes
+    statusEl.classList.remove('listening', 'thinking', 'speaking', 'reconnecting');
+
+    switch (status) {
+        case 'calling':
+            statusEl.textContent = 'Calling...';
+            break;
+        case 'listening':
+            statusEl.textContent = 'Listening...';
+            statusEl.classList.add('listening');
+            break;
+        case 'thinking':
+            statusEl.textContent = 'Thinking...';
+            statusEl.classList.add('thinking');
+            break;
+        case 'speaking':
+            statusEl.textContent = 'Speaking...';
+            statusEl.classList.add('speaking');
+            break;
+        case 'reconnecting':
+            statusEl.textContent = 'Reconnecting...';
+            statusEl.classList.add('reconnecting');
+            break;
+    }
+}
+
+
+// ═══════════════════════════════════════════
+//  MUTE / SPEAKER TOGGLES
+// ═══════════════════════════════════════════
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const btn = document.getElementById('wa-mute-btn');
+
+    if (isMuted) {
+        btn.classList.add('muted');
+        btn.querySelector('.wa-ctrl-icon').textContent = '🔇';
+        btn.querySelector('.wa-ctrl-label').textContent = 'Unmute';
+        // Stop recognition
+        if (recognition) {
+            try { recognition.stop(); } catch (e) { }
+        }
+    } else {
+        resetMuteUI();
+        // Restart recognition
+        if (isVoiceActive && !isSpeaking && recognition) {
+            try { recognition.start(); } catch (e) { }
+            setCallStatus('listening');
+        }
+    }
+}
+
+function resetMuteUI() {
+    const btn = document.getElementById('wa-mute-btn');
+    btn.classList.remove('muted');
+    btn.querySelector('.wa-ctrl-icon').textContent = '🎤';
+    btn.querySelector('.wa-ctrl-label').textContent = 'Mute';
+}
+
+function toggleSpeaker() {
+    isSpeakerOff = !isSpeakerOff;
+    const btn = document.getElementById('wa-speaker-btn');
+
+    if (isSpeakerOff) {
+        btn.classList.add('muted');
+        btn.querySelector('.wa-ctrl-icon').textContent = '🔈';
+        btn.querySelector('.wa-ctrl-label').textContent = 'Unmute';
+        // If currently speaking, cancel it
+        if (isSpeaking) {
+            synthesis.cancel();
+            isSpeaking = false;
+            // Restart listening
+            if (isVoiceActive && !isMuted && recognition) {
+                try { recognition.start(); } catch (e) { }
+                setCallStatus('listening');
+            }
+        }
+    } else {
+        resetSpeakerUI();
+    }
+}
+
+function resetSpeakerUI() {
+    const btn = document.getElementById('wa-speaker-btn');
+    btn.classList.remove('muted');
+    btn.querySelector('.wa-ctrl-icon').textContent = '🔊';
+    btn.querySelector('.wa-ctrl-label').textContent = 'Speaker';
+}
+
+
+// ═══════════════════════════════════════════
+//  TEXT-TO-SPEECH (The "Speaker")
+// ═══════════════════════════════════════════
+
+function cleanTextForSpeech(text) {
+    // Strip emojis
+    let cleaned = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '');
+    // Strip markdown symbols
+    cleaned = cleaned.replace(/[*#_~`>|]/g, '');
+    // Collapse multiple spaces / newlines
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    return cleaned;
+}
+
+function speakResponse(text) {
+    if (!isVoiceActive || !synthesis) return;
+
+    // If speaker is muted, skip speaking and go back to listening
+    if (isSpeakerOff) {
+        document.getElementById('wa-ai-text').textContent = text;
+        if (!isMuted && recognition) {
+            try { recognition.start(); } catch (e) { }
+            setCallStatus('listening');
+        }
+        return;
+    }
+
+    isSpeaking = true;
+    setCallStatus('speaking');
+
+    // Show AI transcript
+    document.getElementById('wa-ai-text').textContent = text;
+    document.getElementById('wa-transcript-ai').classList.add('active');
+    document.getElementById('wa-transcript-user').classList.remove('active');
+
+    // Cancel any ongoing speech
+    synthesis.cancel();
+
+    const cleanedText = cleanTextForSpeech(text);
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Pick the best voice
+    const voices = synthesis.getVoices();
+    const preferredVoice =
+        voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
+        voices.find(v => v.lang === 'en-IN') ||
+        voices.find(v => v.lang === 'en-US' && v.name.includes('Female')) ||
+        voices.find(v => v.lang.startsWith('en'));
+
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+    }
+
+    utterance.onend = () => {
+        isSpeaking = false;
+        document.getElementById('wa-transcript-ai').classList.remove('active');
+        if (isVoiceActive) {
+            setCallStatus('listening');
+            document.getElementById('wa-user-text').textContent = 'Your turn to speak...';
+            // Restart recognition
+            if (!isMuted && recognition) {
+                try { recognition.start(); } catch (e) { }
+            }
+        }
+    };
+
+    utterance.onerror = () => {
+        isSpeaking = false;
+        document.getElementById('wa-transcript-ai').classList.remove('active');
+        if (isVoiceActive && !isMuted && recognition) {
+            try { recognition.start(); } catch (e) { }
+            setCallStatus('listening');
+        }
+    };
+
+    synthesis.speak(utterance);
+}
+
+// ═══════════════════════════════════════════
+//  INIT: Load voices (async in some browsers)
+// ═══════════════════════════════════════════
+if (synthesis) {
+    synthesis.onvoiceschanged = () => synthesis.getVoices();
+}
