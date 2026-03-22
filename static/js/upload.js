@@ -161,6 +161,50 @@ function previewPersonaImage(input) {
     }
 }
 
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Max dimensions
+                const MAX_WIDTH = 500;
+                const MAX_HEIGHT = 500;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    }));
+                }, 'image/jpeg', 0.8);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function uploadPersona() {
     const personName = document.getElementById('person-name').value.trim();
 
@@ -200,7 +244,14 @@ async function uploadPersona() {
 
     const imageInput = document.getElementById('persona-image-input');
     if (imageInput.files.length > 0) {
-        formData.append('persona_image', imageInput.files[0]);
+        try {
+            // Compress image to ensure payload stays under Vercel 4.5MB limit
+            const compressedImage = await compressImage(imageInput.files[0]);
+            formData.append('persona_image', compressedImage);
+        } catch (e) {
+            // Fallback to original if compression fails
+            formData.append('persona_image', imageInput.files[0]);
+        }
     }
 
     try {
