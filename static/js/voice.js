@@ -5,6 +5,7 @@ let recognition = null;
 let synthesis = window.speechSynthesis;
 let isVoiceActive = false;
 let isSpeaking = false;
+let isThinking = false;
 let isMuted = false;
 let isSpeakerOff = false;
 
@@ -36,6 +37,7 @@ function startVoiceCall() {
     isMuted = false;
     isSpeakerOff = false;
     isSpeaking = false;
+    isThinking = false;
 
     // --- Populate call screen identity ---
     const personaSelect = document.getElementById('persona-select');
@@ -100,23 +102,24 @@ function startVoiceCall() {
                 if (finalTranscript.trim()) {
                     const msg = finalTranscript.trim();
                     finalTranscript = '';
+                    isThinking = true;
                     setCallStatus('thinking');
                     document.getElementById('wa-transcript-user').classList.remove('active');
 
                     // Pause recognition while AI responds
-                    try { recognition.stop(); } catch (e) { }
+                    try { recognition.abort(); } catch (e) { }
                     sendVoiceMessage(msg);
                 }
-            }, 500);
+            }, 100);
         }
     };
 
     recognition.onend = () => {
         // Auto-restart if call is active and we're not speaking
-        if (isVoiceActive && !isSpeaking) {
+        if (isVoiceActive && !isSpeaking && !isThinking) {
             try {
                 setTimeout(() => {
-                    if (isVoiceActive && !isSpeaking && !isMuted) {
+                    if (isVoiceActive && !isSpeaking && !isThinking && !isMuted) {
                         recognition.start();
                         setCallStatus('listening');
                     }
@@ -160,6 +163,7 @@ function startVoiceCall() {
 function endVoiceCall() {
     isVoiceActive = false;
     isSpeaking = false;
+    isThinking = false;
     isMuted = false;
     isSpeakerOff = false;
 
@@ -292,6 +296,7 @@ function speakResponse(text) {
     // If speaker is muted, skip speaking and go back to listening
     if (isSpeakerOff) {
         document.getElementById('wa-ai-text').textContent = text;
+        isThinking = false;
         if (!isMuted && recognition) {
             try { recognition.start(); } catch (e) { }
             setCallStatus('listening');
@@ -299,6 +304,7 @@ function speakResponse(text) {
         return;
     }
 
+    isThinking = false;
     isSpeaking = true;
     setCallStatus('speaking');
 

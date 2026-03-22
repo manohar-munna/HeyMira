@@ -110,3 +110,16 @@ def end_conversation(conversation_id):
     return jsonify({
         'message': 'Conversation ended',
     })
+
+@chat_bp.route('/api/chat/delete/<int:conversation_id>', methods=['DELETE'])
+@login_required
+def delete_conversation(conversation_id):
+    conv = Conversation.get_by_id(conversation_id)
+    if not conv or conv.user_id != current_user.id:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    conv.delete()
+    
+    return jsonify({
+        'message': 'Conversation deleted successfully'
+    })

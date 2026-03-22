@@ -989,12 +989,58 @@ select.form-input {
 /* --- Header --- */
 .wa-call-header {
     text-align: center;
+    width: 100%;
 }
 
 .wa-encrypted {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.35);
     letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.wa-voice-selector {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+}
+
+.wa-voice-select {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 8px 36px 8px 16px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    max-width: 240px;
+    text-overflow: ellipsis;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255, 255, 255, 0.6)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+}
+
+.wa-voice-select:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.wa-voice-select:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+}
+
+.wa-voice-select option {
+    background: #1a1b26;
+    color: #ffffff;
 }
 
 /* --- Identity --- */

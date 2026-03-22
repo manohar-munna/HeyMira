@@ -72,14 +72,33 @@ function renderConversationList() {
     list.innerHTML = conversations.map(c => `
         <div class="conv-item ${currentConversation && currentConversation.id === c.id ? 'active' : ''}" 
              onclick="selectConversation(${c.id})">
-            <h4>${escapeHtml(c.title)}</h4>
-            <div class="conv-meta">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="margin:0;">${escapeHtml(c.title)}</h4>
+                <button class="btn-icon btn-sm" style="width:24px; height:24px; font-size:0.8rem; background:transparent; border:none; color:var(--danger);" onclick="event.stopPropagation(); deleteConversation(${c.id})" title="Delete Chat">🗑️</button>
+            </div>
+            <div class="conv-meta" style="margin-top:4px;">
                 <span>${formatDate(c.started_at)}</span>
                 <span>•</span>
                 <span>${c.message_count} msgs</span>
             </div>
         </div>
     `).join('');
+}
+
+async function deleteConversation(id) {
+    if (!confirm('Are you sure you want to delete this chat history?')) return;
+    try {
+        await apiCall(`/api/chat/delete/${id}`, { method: 'DELETE' });
+        showToast('Chat deleted', 'success');
+        if (currentConversation && currentConversation.id === id) {
+            currentConversation = null;
+            document.getElementById('chat-active').style.display = 'none';
+            document.getElementById('chat-welcome').style.display = 'flex';
+        }
+        await loadConversations();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 async function newConversation() {
@@ -274,6 +293,11 @@ function sendVoiceMessage(text) {
     }).catch(error => {
         typing.classList.remove('visible');
         showToast(error.message, 'error');
+        if (typeof isThinking !== 'undefined') isThinking = false;
+        if (typeof setCallStatus === 'function') setCallStatus('listening');
+        if (typeof recognition !== 'undefined' && recognition && !isMuted) {
+            try { recognition.start(); } catch (e) { }
+        }
     });
 }
 

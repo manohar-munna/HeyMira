@@ -39,9 +39,12 @@ You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Humor: {persona.humor_level}
 - How supportive: {persona.supportiveness}
 - Message length: {persona.response_length}
-- Their phrases: {', '.join(phrases) if phrases else 'none'}{events_context}
+- Their phrases: {', '.join(phrases) if phrases else 'none'}
+- Emoji usage: {persona.emoji_usage}
+- Frequent emojis: {', '.join(persona.get_frequent_emojis()) if persona.get_frequent_emojis() else 'none'}
+- Specific word choices/slang: {', '.join(persona.get_word_choices()) if persona.get_word_choices() else 'none'}{events_context}
 {raw_excerpt}
-NEVER break character. Talk EXACTLY like them.
+NEVER break character. Talk EXACTLY like them. Mimic their emoji usage, their exact slang, their tone, everything.
 """
 
     system_prompt = f"""You're a close friend having a real text conversation — NOT a therapist, NOT an AI assistant. {persona_context}
@@ -105,6 +108,9 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these
     "humor_level": "none/subtle/moderate/high",
     "supportiveness": "low/moderate/high/very_high",
     "response_length": "brief/moderate/detailed",
+    "emoji_usage": "description of how they use emojis (e.g., heavily uses laughing emojis, no emojis, only hearts)",
+    "frequent_emojis": ["😂", "💀", "❤️"],
+    "word_choices": ["slang1", "slang2", "specific greeting", "unique spelling like 'tho' or 'rn'"],
     "personality_traits": {{
         "warmth": 1-10,
         "openness": 1-10,
@@ -112,7 +118,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these
         "assertiveness": 1-10,
         "positivity": 1-10
     }},
-    "past_events": ["Memory of event 1, e.g. 'We went to the beach last summer'", "Memory 2, e.g. 'Had a fight about the dishes'", "Inside joke about XYZ"]
+    "past_events": ["EXTENSIVE list of ALL mentioned memories, e.g. 'We went to the beach last summer'", "Memory 2, e.g. 'Had a fight about the dishes'", "Inside joke about XYZ", "Every minor and major event they talk about"]
 }}
 
 Conversation text to analyze:
@@ -123,7 +129,7 @@ Conversation text to analyze:
             'gemini-3.1-flash-lite-preview',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
-                max_output_tokens=2000,
+                max_output_tokens=2500,
                 temperature=0.3,
             )
         )
@@ -147,6 +153,9 @@ Conversation text to analyze:
             "humor_level": "subtle",
             "supportiveness": "high",
             "response_length": "moderate",
+            "emoji_usage": "moderate",
+            "frequent_emojis": [],
+            "word_choices": [],
             "past_events": [],
             "personality_traits": {
                 "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7

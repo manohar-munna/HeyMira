@@ -235,6 +235,9 @@ class Persona:
         self.profile_image = kwargs.get('profile_image')
         self.raw_text = kwargs.get('raw_text', '')
         self.past_events = kwargs.get('past_events', '[]')
+        self.emoji_usage = kwargs.get('emoji_usage', '')
+        self.frequent_emojis = kwargs.get('frequent_emojis', '[]')
+        self.word_choices = kwargs.get('word_choices', '[]')
         self.created_at = kwargs.get('created_at', datetime.utcnow())
 
     def get_traits(self):
@@ -255,6 +258,18 @@ class Persona:
         except (json.JSONDecodeError, TypeError):
             return []
 
+    def get_frequent_emojis(self):
+        try:
+            return json.loads(self.frequent_emojis) if isinstance(self.frequent_emojis, str) else self.frequent_emojis
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def get_word_choices(self):
+        try:
+            return json.loads(self.word_choices) if isinstance(self.word_choices, str) else self.word_choices
+        except (json.JSONDecodeError, TypeError):
+            return []
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -271,6 +286,9 @@ class Persona:
             'source_filename': self.source_filename,
             'profile_image': self.profile_image,
             'past_events': self.get_past_events(),
+            'emoji_usage': self.emoji_usage,
+            'frequent_emojis': self.get_frequent_emojis(),
+            'word_choices': self.get_word_choices(),
             'created_at': _to_iso(self.created_at),
         }
 
@@ -292,6 +310,9 @@ class Persona:
             'profile_image': self.profile_image,
             'raw_text': self.raw_text,
             'past_events': self.past_events,
+            'emoji_usage': self.emoji_usage,
+            'frequent_emojis': self.frequent_emojis,
+            'word_choices': self.word_choices,
             'created_at': self.created_at,
         }
 
