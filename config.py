@@ -10,7 +10,7 @@ class Config:
     FIREBASE_CREDENTIALS = os.environ.get('FIREBASE_CREDENTIALS', 'firebase-credentials.json')
     
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
+    MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max upload
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
     @staticmethod
