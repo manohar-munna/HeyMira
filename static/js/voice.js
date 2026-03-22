@@ -76,7 +76,7 @@ function startVoiceCall() {
     let finalTranscript = '';
 
     recognition.onresult = (event) => {
-        if (isMuted) return;
+        if (isMuted || isSpeaking) return;
 
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -344,25 +344,30 @@ function speakResponse(text) {
     }
 
     utterance.onend = () => {
-        isSpeaking = false;
-        document.getElementById('wa-transcript-ai').classList.remove('active');
-        if (isVoiceActive) {
-            setCallStatus('listening');
-            document.getElementById('wa-user-text').textContent = 'Your turn to speak...';
-            // Restart recognition
-            if (!isMuted && recognition) {
-                try { recognition.start(); } catch (e) { }
+        // Wait briefly for room echo to die down before re-enabling listening
+        setTimeout(() => {
+            isSpeaking = false;
+            document.getElementById('wa-transcript-ai').classList.remove('active');
+            if (isVoiceActive) {
+                setCallStatus('listening');
+                document.getElementById('wa-user-text').textContent = 'Your turn to speak...';
+                // Restart recognition
+                if (!isMuted && recognition) {
+                    try { recognition.start(); } catch (e) { }
+                }
             }
-        }
+        }, 500);
     };
 
     utterance.onerror = () => {
-        isSpeaking = false;
-        document.getElementById('wa-transcript-ai').classList.remove('active');
-        if (isVoiceActive && !isMuted && recognition) {
-            try { recognition.start(); } catch (e) { }
-            setCallStatus('listening');
-        }
+        setTimeout(() => {
+            isSpeaking = false;
+            document.getElementById('wa-transcript-ai').classList.remove('active');
+            if (isVoiceActive && !isMuted && recognition) {
+                try { recognition.start(); } catch (e) { }
+                setCallStatus('listening');
+            }
+        }, 500);
     };
 
     synthesis.speak(utterance);

@@ -91,7 +91,7 @@
                         title="Voice Call">
                         🎤
                     </button>
-                    <button class="btn btn-icon btn-secondary" onclick="endConversation()" title="End Chat">
+                    <button class="btn btn-icon btn-secondary" onclick="if(currentConversation) deleteConversation(currentConversation.id)" title="Delete Chat">
                         🗑️
                     </button>
                 </div>
