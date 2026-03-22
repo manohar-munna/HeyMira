@@ -33,8 +33,6 @@
             </select>
         </div>
 
-        <!-- Connection Requests (patient only) -->
-        <div id="connection-requests" style="display:none;padding:0 12px 8px;"></div>
 
         <!-- Conversations -->
         <div class="conversation-list" id="conversation-list">
@@ -63,8 +61,7 @@
                 <div class="user-avatar" id="user-avatar">?</div>
                 <div class="user-info">
                     <div class="user-name" id="user-name">Loading...</div>
-                    <div class="user-role" id="user-role">patient</div>
-                    <div id="doctor-status" style="font-size:0.7rem;"></div>
+                    <div class="user-role" id="user-role">user</div>
                 </div>
                 <button class="btn btn-sm btn-secondary" onclick="logout()"
                     style="padding:6px 10px;font-size:0.75rem;">⏎</button>
@@ -90,16 +87,12 @@
                     <span class="persona-name" id="chat-persona"></span>
                 </div>
                 <div class="chat-header-right">
-                    <div class="mood-indicator" id="mood-indicator">
-                        <span>😊</span>
-                        <span id="mood-text">Neutral</span>
-                    </div>
                     <button class="btn btn-icon btn-secondary voice-btn" id="voice-btn" onclick="toggleVoiceCall()"
                         title="Voice Call">
                         🎤
                     </button>
-                    <button class="btn btn-icon btn-secondary" onclick="endConversation()" title="End Session">
-                        ⏹
+                    <button class="btn btn-icon btn-secondary" onclick="endConversation()" title="End Chat">
+                        🗑️
                     </button>
                 </div>
             </div>
