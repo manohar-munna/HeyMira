@@ -14,13 +14,28 @@ _firebase_app = None
 _firestore_client = None
 
 
-def init_firebase(credentials_path: str):
-    """Initialise the Firebase Admin SDK (called once from app.py)."""
+def init_firebase(credentials_data: str):
+    """Initialise the Firebase Admin SDK (called once from app.py).
+    Accepts either a file path to the JSON key or the raw JSON string itself (for Vercel)."""
     global _firebase_app, _firestore_client
     if _firebase_app is not None:
         return _firestore_client
 
-    cred = credentials.Certificate(credentials_path)
+    import json
+    
+    # If the setup string looks like a JSON object, parse it directly
+    if credentials_data.strip().startswith('{'):
+        try:
+            cred_dict = json.loads(credentials_data)
+            cred = credentials.Certificate(cred_dict)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse Firebase JSON from environment variable: {e}")
+    else:
+        # Otherwise, treat it as a path to a file
+        if not os.path.exists(credentials_data):
+            raise FileNotFoundError(f"Firebase credentials file not found at: {credentials_data}")
+        cred = credentials.Certificate(credentials_data)
+
     _firebase_app = firebase_admin.initialize_app(cred)
     _firestore_client = firestore.client()
     return _firestore_client
