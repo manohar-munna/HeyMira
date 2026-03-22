@@ -3,13 +3,12 @@
 let currentConversation = null;
 let currentUser = null;
 let conversations = [];
+let personaCache = {}; // Cache personas to avoid repeated API calls
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadUser();
     await loadPersonas();
     await loadConversations();
-    await checkConnectionRequests();
-    connectSSE();
 });
 
 async function loadUser() {
@@ -25,14 +24,10 @@ async function loadUser() {
             document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
         }
 
-        // Show doctor connection status
+        // Hide doctor status completely
         const docStatus = document.getElementById('doctor-status');
         if (docStatus) {
-            if (currentUser.assigned_doctor_id) {
-                docStatus.innerHTML = `<span style="color:var(--success);">● Connected to Dr. ${currentUser.assigned_doctor_name || 'Doctor'}</span>`;
-            } else {
-                docStatus.innerHTML = `<span style="color:var(--warning);">○ No doctor connected</span>`;
-            }
+            docStatus.style.display = 'none';
         }
 
         if (currentUser.theme) {
@@ -65,116 +60,7 @@ async function loadConversations() {
     } catch (e) { }
 }
 
-async function checkConnectionRequests() {
-    try {
-        const data = await apiCall('/api/patient/connection-requests');
-        if (data.requests && data.requests.length > 0) {
-            showConnectionRequests(data.requests);
-        }
-    } catch (e) { }
-}
-
-function showConnectionRequests(requests) {
-    const container = document.getElementById('connection-requests');
-    if (!container) return;
-
-    container.innerHTML = requests.map(r => `
-        <div class="glass-card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--accent);">
-            <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">
-                Dr. ${escapeHtml(r.doctor_name)} wants to connect
-            </div>
-            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">
-                ${escapeHtml(r.message)}
-            </div>
-            <div style="display:flex;gap:8px;">
-                <button class="btn btn-primary btn-sm" onclick="respondToRequest(${r.id}, 'accept')">Accept</button>
-                <button class="btn btn-secondary btn-sm" onclick="respondToRequest(${r.id}, 'reject')">Decline</button>
-            </div>
-        </div>
-    `).join('');
-    container.style.display = 'block';
-}
-
-async function respondToRequest(requestId, action) {
-    try {
-        const data = await apiCall(`/api/patient/connection-requests/${requestId}/respond`, {
-            method: 'POST',
-            body: JSON.stringify({ action })
-        });
-        showToast(data.message, 'success');
-
-        // Smoothly remove the request card (no reload!)
-        const container = document.getElementById('connection-requests');
-        const cards = container.querySelectorAll('.glass-card');
-        cards.forEach(card => {
-            card.style.transition = 'opacity 0.3s, transform 0.3s';
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(-20px)';
-            setTimeout(() => card.remove(), 300);
-        });
-
-        // Hide container after animation
-        setTimeout(() => {
-            container.style.display = 'none';
-        }, 350);
-
-        // Update doctor status instantly (no reload)
-        if (action === 'accept' && data.doctor_name) {
-            updateDoctorStatus(data.doctor_name);
-        }
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
-
-function updateDoctorStatus(doctorName) {
-    const docStatus = document.getElementById('doctor-status');
-    if (docStatus) {
-        docStatus.innerHTML = `<span style="color:var(--success);">● Connected to Dr. ${escapeHtml(doctorName)}</span>`;
-        docStatus.style.transition = 'opacity 0.3s';
-        docStatus.style.opacity = '0';
-        setTimeout(() => { docStatus.style.opacity = '1'; }, 50);
-    }
-}
-
-// ========== Server-Sent Events (SSE) ==========
-
-function connectSSE() {
-    const evtSource = new EventSource('/api/events/stream');
-
-    evtSource.addEventListener('connection_request', (e) => {
-        const data = JSON.parse(e.data);
-        const container = document.getElementById('connection-requests');
-        if (container) {
-            container.style.display = 'block';
-            container.innerHTML += `
-                <div class="glass-card" style="padding:14px 18px;margin-bottom:10px;border-left:3px solid var(--accent);animation:slideIn 0.3s ease;">
-                    <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">
-                        Dr. ${escapeHtml(data.doctor_name)} wants to connect
-                    </div>
-                    <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">
-                        ${escapeHtml(data.message)}
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-primary btn-sm" onclick="respondToRequest(${data.id}, 'accept')">Accept</button>
-                        <button class="btn btn-secondary btn-sm" onclick="respondToRequest(${data.id}, 'reject')">Decline</button>
-                    </div>
-                </div>
-            `;
-            showToast('New request from Dr. ' + data.doctor_name, 'success');
-        }
-    });
-
-    evtSource.addEventListener('alert', (e) => {
-        const data = JSON.parse(e.data);
-        showToast('⚠️ ' + data.message, 'warning');
-    });
-
-    evtSource.onerror = () => {
-        evtSource.close();
-        setTimeout(connectSSE, 5000);
-    };
-}
+// --- Connection Requests and SSE removed for new companion theme ---
 
 function renderConversationList() {
     const list = document.getElementById('conversation-list');
@@ -191,7 +77,6 @@ function renderConversationList() {
                 <span>${formatDate(c.started_at)}</span>
                 <span>•</span>
                 <span>${c.message_count} msgs</span>
-                <span class="badge ${getRiskBadge(c.risk_level)}" style="margin-left:auto;">${c.risk_level}</span>
             </div>
         </div>
     `).join('');
@@ -262,9 +147,18 @@ function renderMessages(messages) {
 
 let activePersona = null;
 async function fetchPersonaDetails(personaId) {
+    if (!personaId) return;
+    
+    // Check cache first (improves speed dramatically)
+    if (personaCache[personaId]) {
+        activePersona = personaCache[personaId];
+        return;
+    }
+
     try {
         const res = await apiCall(`/api/persona/${personaId}`);
         activePersona = res.persona;
+        personaCache[personaId] = activePersona; // Store in cache
     } catch (e) {
         activePersona = null;
     }
@@ -323,46 +217,27 @@ async function sendMessage() {
         typing.classList.remove('visible');
         addMessageToUI('ai', data.ai_message.content);
 
-        // Update mood indicator
-        updateMood(data.sentiment);
-
         // Update conversation in list only if it's the first exchange
-        if (!currentConversation.title || currentConversation.title === 'New Conversation' || currentConversation.message_count <= 2) {
+        if (!currentConversation.title || currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation' || currentConversation.message_count <= 2) {
             currentConversation.title = data.user_message.content.substring(0, 80);
             document.getElementById('chat-title').textContent = currentConversation.title;
         }
 
-        currentConversation.risk_level = data.risk_level;
         currentConversation.message_count = (currentConversation.message_count || 0) + 2;
         renderConversationList();
 
-        // Show alert notification if crisis detected
-        if (data.alert_triggered) {
-            showToast('⚠️ Your therapist has been notified. You are not alone.', 'warning');
-        }
     } catch (error) {
         typing.classList.remove('visible');
         showToast(error.message, 'error');
     }
 }
 
-function updateMood(sentiment) {
-    if (!sentiment) return;
-    const emoji = getMoodEmoji(sentiment.score);
-    const text = sentiment.emotion || 'neutral';
-    document.getElementById('mood-indicator').innerHTML = `
-        <span>${emoji}</span>
-        <span id="mood-text">${text}</span>
-    `;
-}
-
 async function endConversation() {
-    if (!currentConversation) return;
-    if (!confirm('End this session? A report will be generated for your doctor.')) return;
+    if (!confirm('End this conversation?')) return;
 
     try {
         const data = await apiCall(`/api/chat/end/${currentConversation.id}`, { method: 'POST' });
-        showToast('Session ended. Report generated.', 'success');
+        showToast('Chat ended.', 'success');
         currentConversation = null;
         document.getElementById('chat-active').style.display = 'none';
         document.getElementById('chat-welcome').style.display = 'flex';
@@ -391,15 +266,10 @@ function sendVoiceMessage(text) {
     }).then(data => {
         typing.classList.remove('visible');
         addMessageToUI('ai', data.ai_message.content, null, true);
-        updateMood(data.sentiment);
 
         // Speak the AI response
         if (typeof speakResponse === 'function') {
             speakResponse(data.ai_message.content);
-        }
-
-        if (data.alert_triggered) {
-            showToast('⚠️ Your therapist has been notified.', 'warning');
         }
     }).catch(error => {
         typing.classList.remove('visible');
