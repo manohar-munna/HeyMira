@@ -61,7 +61,16 @@ async function analyzeChat() {
             method: 'POST',
             body: formData
         });
-        const data = await response.json();
+        
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.error("Server returned non-JSON response:", text);
+            throw new Error("Server error: Could not analyze chat. Please try a smaller file.");
+        }
 
         analyzeProgress.style.display = 'none';
 
@@ -259,7 +268,16 @@ async function uploadPersona() {
             method: 'POST',
             body: formData
         });
-        const data = await response.json();
+
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.error("Server returned non-JSON response:", text);
+            throw new Error("Server error: Could not create persona. Please try a smaller image.");
+        }
 
         clearInterval(progressInterval);
 

@@ -48,7 +48,17 @@ async function apiCall(url, options = {}) {
             headers: { 'Content-Type': 'application/json', ...options.headers },
             ...options
         });
-        const data = await response.json();
+        
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.error("API Error - Non-JSON response:", text);
+            throw new Error(`Server returned an error (${response.status})`);
+        }
+
         if (!response.ok) {
             throw new Error(data.error || 'Something went wrong');
         }

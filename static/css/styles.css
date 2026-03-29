@@ -1140,6 +1140,22 @@ select.form-input {
     position: relative;
     z-index: 1;
     overflow: hidden;
+    transition: transform 0.1s;
+}
+
+.wa-avatar.is-speaking-pulse {
+    animation: avatar-speak-pulse 0.2s ease-in-out infinite alternate;
+}
+
+@keyframes avatar-speak-pulse {
+    from {
+        transform: scale(1);
+        box-shadow: 0 0 50px var(--accent-glow), 0 0 100px rgba(0, 0, 0, 0.3);
+    }
+    to {
+        transform: scale(1.08);
+        box-shadow: 0 0 80px var(--accent-glow), 0 0 140px rgba(0, 0, 0, 0.6);
+    }
 }
 
 .wa-avatar img {

@@ -97,23 +97,22 @@ function startVoiceCall() {
 
         // When we have a final result, wait briefly then send
         if (finalTranscript.trim().length > 0) {
-            clearTimeout(recognition._sendTimeout);
-            recognition._sendTimeout = setTimeout(() => {
-                if (finalTranscript.trim()) {
-                    const msg = finalTranscript.trim();
-                    finalTranscript = '';
-                    isThinking = true;
-                    setCallStatus('thinking');
-                    document.getElementById('wa-transcript-user').classList.remove('active');
+        clearTimeout(recognition._sendTimeout);
+        recognition._sendTimeout = setTimeout(() => {
+        if (finalTranscript.trim()) {
+        const msg = finalTranscript.trim();
+        finalTranscript = '';
+        isThinking = true;
+        setCallStatus('thinking');
+        document.getElementById('wa-transcript-user').classList.remove('active');
 
-                    // Pause recognition while AI responds
-                    try { recognition.abort(); } catch (e) { }
-                    sendVoiceMessage(msg);
-                }
-            }, 800); // Increased timeout to 800ms to allow user to finish speaking
+        // Pause recognition while AI responds
+        try { recognition.abort(); } catch (e) { }
+        sendVoiceMessage(msg);
         }
-    };
-
+        }, 500); // Reduced to 500ms for "immediate" response after pausing
+        }
+        };
     recognition.onend = () => {
         // Auto-restart if call is active and we're not speaking
         if (isVoiceActive && !isSpeaking && !isThinking) {
@@ -173,6 +172,9 @@ function endVoiceCall() {
     }
 
     synthesis.cancel();
+    
+    const avatar = document.getElementById('voice-avatar');
+    if (avatar) avatar.classList.remove('is-speaking-pulse');
 
     document.getElementById('voice-overlay').classList.remove('active');
     document.getElementById('voice-btn').classList.remove('active');
@@ -308,6 +310,10 @@ function speakResponse(text) {
     isSpeaking = true;
     setCallStatus('speaking');
 
+    // Add audio-reactive pulse effect
+    const avatar = document.getElementById('voice-avatar');
+    if (avatar) avatar.classList.add('is-speaking-pulse');
+
     // Show AI transcript
     document.getElementById('wa-ai-text').textContent = text;
     document.getElementById('wa-transcript-ai').classList.add('active');
@@ -344,6 +350,9 @@ function speakResponse(text) {
     }
 
     utterance.onend = () => {
+        // Remove pulse effect
+        if (avatar) avatar.classList.remove('is-speaking-pulse');
+        
         // Wait briefly for room echo to die down before re-enabling listening
         setTimeout(() => {
             isSpeaking = false;
@@ -356,10 +365,13 @@ function speakResponse(text) {
                     try { recognition.start(); } catch (e) { }
                 }
             }
-        }, 500);
+        }, 200);
     };
 
     utterance.onerror = () => {
+        // Remove pulse effect
+        if (avatar) avatar.classList.remove('is-speaking-pulse');
+
         setTimeout(() => {
             isSpeaking = false;
             document.getElementById('wa-transcript-ai').classList.remove('active');
@@ -367,7 +379,7 @@ function speakResponse(text) {
                 try { recognition.start(); } catch (e) { }
                 setCallStatus('listening');
             }
-        }, 500);
+        }, 200);
     };
 
     synthesis.speak(utterance);

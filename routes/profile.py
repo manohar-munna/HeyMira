@@ -46,19 +46,15 @@ def update_profile():
         file = request.files['profile_image']
         if file and file.filename != '':
             if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Generate a unique filename using user ID to prevent overwrites
-                unique_filename = f"user_{current_user.id}_{filename}"
-                
-                # Ensure profile uploads directory exists
-                profile_uploads_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'profiles')
-                os.makedirs(profile_uploads_dir, exist_ok=True)
-                
-                filepath = os.path.join(profile_uploads_dir, unique_filename)
-                file.save(filepath)
-                
-                # Save the relative URL
-                current_user.profile_image = f"/static/uploads/profiles/{unique_filename}"
+                import base64
+                img_data = file.read()
+                if len(img_data) < 700 * 1024: # Keep under ~700kb
+                    ext = file.filename.rsplit('.', 1)[-1].lower()
+                    mime_type = f"image/{ext}" if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] else 'image/jpeg'
+                    base64_str = base64.b64encode(img_data).decode('utf-8')
+                    current_user.profile_image = f"data:{mime_type};base64,{base64_str}"
+                else:
+                    return jsonify({'error': 'Image too large. Please upload an image smaller than 700KB'}), 400
             else:
                 return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, gif, webp'}), 400
 

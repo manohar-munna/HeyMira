@@ -81,15 +81,16 @@ def upload_persona():
     if 'persona_image' in request.files:
         img_file = request.files['persona_image']
         if img_file and img_file.filename != '':
-            filename = secure_filename(img_file.filename)
-            unique_filename = f"persona_{current_user.id}_{filename}"
-            
-            persona_uploads_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'personas')
-            os.makedirs(persona_uploads_dir, exist_ok=True)
-            
-            filepath = os.path.join(persona_uploads_dir, unique_filename)
-            img_file.save(filepath)
-            profile_image_url = f"/static/uploads/personas/{unique_filename}"
+            import base64
+            img_data = img_file.read()
+            # Basic validation to avoid huge files (keep under ~700kb to stay within Firestore 1MB limit)
+            if len(img_data) < 700 * 1024:
+                ext = img_file.filename.rsplit('.', 1)[-1].lower()
+                mime_type = f"image/{ext}" if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] else 'image/jpeg'
+                base64_str = base64.b64encode(img_data).decode('utf-8')
+                profile_image_url = f"data:{mime_type};base64,{base64_str}"
+            else:
+                print("Warning: Image too large, skipping base64 encoding to avoid Firestore limits.")
 
     # Save persona to Firestore
     persona = Persona(
