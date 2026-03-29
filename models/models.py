@@ -239,6 +239,14 @@ class Persona:
         self.frequent_emojis = kwargs.get('frequent_emojis', '[]')
         self.word_choices = kwargs.get('word_choices', '[]')
         self.lip_coords = kwargs.get('lip_coords', '{"x": 50, "y": 75, "found": false}')
+        # Deep cloning fields
+        self.psychological_profile = kwargs.get('psychological_profile', '{}')
+        self.grammar_habits = kwargs.get('grammar_habits', '')
+        self.texting_speed = kwargs.get('texting_speed', '')
+        self.topic_preferences = kwargs.get('topic_preferences', '')
+        self.argument_style = kwargs.get('argument_style', '')
+        self.affection_style = kwargs.get('affection_style', '')
+        self.cultural_references = kwargs.get('cultural_references', '')
         self.created_at = kwargs.get('created_at', datetime.utcnow())
 
     def get_traits(self):
@@ -271,6 +279,12 @@ class Persona:
         except (json.JSONDecodeError, TypeError):
             return []
 
+    def get_psychological_profile(self):
+        try:
+            return json.loads(self.psychological_profile) if isinstance(self.psychological_profile, str) else self.psychological_profile
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -291,6 +305,13 @@ class Persona:
             'frequent_emojis': self.get_frequent_emojis(),
             'word_choices': self.get_word_choices(),
             'lip_coords': json.loads(self.lip_coords) if isinstance(self.lip_coords, str) else self.lip_coords,
+            'psychological_profile': self.get_psychological_profile(),
+            'grammar_habits': self.grammar_habits,
+            'texting_speed': self.texting_speed,
+            'topic_preferences': self.topic_preferences,
+            'argument_style': self.argument_style,
+            'affection_style': self.affection_style,
+            'cultural_references': self.cultural_references,
             'created_at': _to_iso(self.created_at),
         }
 
@@ -316,6 +337,13 @@ class Persona:
             'frequent_emojis': self.frequent_emojis,
             'word_choices': self.word_choices,
             'lip_coords': self.lip_coords,
+            'psychological_profile': self.psychological_profile,
+            'grammar_habits': self.grammar_habits,
+            'texting_speed': self.texting_speed,
+            'topic_preferences': self.topic_preferences,
+            'argument_style': self.argument_style,
+            'affection_style': self.affection_style,
+            'cultural_references': self.cultural_references,
             'created_at': self.created_at,
         }
 

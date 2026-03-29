@@ -1,17 +1,21 @@
 """
-HeyMira - API Key Manager with Groq Backup
+HeyMira - API Key Manager with Groq Backup + Fail-Fast for Vercel
 Try all Gemini keys → if all fail → fall back to Groq (free).
+Optimized: tracks failed keys to avoid retrying them within a cooldown window.
 """
 
 import google.generativeai as genai
 from openai import OpenAI
 import os
+import time
 
 
 class APIKeyManager:
     def __init__(self):
         self._gemini_keys = []
         self._groq_client = None
+        self._failed_keys = {}  # key_index -> timestamp of failure (for cooldown)
+        self._COOLDOWN_SECONDS = 60  # Skip failed keys for 60s
         self._load_keys()
 
     def _load_keys(self):
@@ -40,18 +44,44 @@ class APIKeyManager:
         s = str(error).lower()
         return any(w in s for w in ['quota', 'rate limit', '429', 'resource exhausted', 'exceeded'])
 
+    def _is_key_cooled_down(self, key_index):
+        """Check if a failed key has finished its cooldown period."""
+        if key_index not in self._failed_keys:
+            return True
+        elapsed = time.time() - self._failed_keys[key_index]
+        if elapsed >= self._COOLDOWN_SECONDS:
+            del self._failed_keys[key_index]
+            return True
+        return False
+
+    def get_working_key(self):
+        """Return the first key that isn't in cooldown. Used for streaming."""
+        for i, key in enumerate(self._gemini_keys):
+            if self._is_key_cooled_down(i):
+                return key
+        # All in cooldown, just return the first one
+        return self._gemini_keys[0] if self._gemini_keys else None
+
     def call_with_retry(self, model_name, contents, generation_config):
-        """Try all Gemini keys. If ALL fail → use Groq."""
+        """Try all Gemini keys (skip cooled-down ones). If ALL fail → use Groq."""
         errors = []
 
-        # Try every Gemini key
         for i, key in enumerate(self._gemini_keys):
+            # Skip keys that recently failed (fail-fast)
+            if not self._is_key_cooled_down(i):
+                continue
+
             try:
                 genai.configure(api_key=key)
                 model = genai.GenerativeModel(model_name)
-                return model.generate_content(contents, generation_config=generation_config)
+                result = model.generate_content(contents, generation_config=generation_config)
+                # Success — clear any old failure record
+                self._failed_keys.pop(i, None)
+                return result
             except Exception as e:
                 print(f"[KeyManager] Gemini key #{i+1} failed: {str(e)[:80]}")
+                if self._is_quota_error(e):
+                    self._failed_keys[i] = time.time()
                 errors.append(e)
                 continue
 

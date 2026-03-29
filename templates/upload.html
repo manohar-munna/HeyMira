@@ -6,17 +6,17 @@
     <div class="page-header">
         <a href="/chat" class="back-link">← Back to Chat</a>
         <h1>Upload Persona</h1>
-        <p>Upload a WhatsApp chat export or conversation PDF to create an AI personality</p>
+        <p>Upload a WhatsApp chat export (PDF or TXT) to create an AI personality</p>
     </div>
 
     <div class="upload-card glass-card" id="step-1-card">
         <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
             <div class="drop-icon">📄</div>
-            <h3>Drop PDF here or click to browse</h3>
-            <p>Supports WhatsApp chat exports and conversation PDFs</p>
+            <h3>Drop PDF or TXT here or click to browse</h3>
+            <p>Supports WhatsApp chat exports and conversation files</p>
             <div class="file-name" id="file-name"></div>
         </div>
-        <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelect(this)">
+        <input type="file" id="file-input" accept=".pdf,.txt" style="display:none" onchange="handleFileSelect(this)">
 
         <div class="upload-progress" id="analyze-progress" style="display:none; margin-top:20px;">
             <div class="progress-bar">

@@ -13,11 +13,7 @@
         <div class="nav-links">
             {% if current_user.is_authenticated %}
             <a href="javascript:void(0)" onclick="logout()" class="btn btn-secondary btn-sm">Logout</a>
-            {% if current_user.role == 'doctor' %}
-            <a href="/dashboard" class="btn btn-primary btn-sm">Go to Dashboard</a>
-            {% else %}
             <a href="/chat" class="btn btn-primary btn-sm">Go to Chat</a>
-            {% endif %}
             {% else %}
             <a href="/login" class="btn btn-secondary btn-sm">Login</a>
             <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
@@ -32,11 +28,7 @@
             them — warm, empathetic, and always there for you.</p>
         <div class="hero-cta">
             {% if current_user.is_authenticated %}
-            {% if current_user.role == 'doctor' %}
-            <a href="/dashboard" class="btn btn-primary">Go to Dashboard →</a>
-            {% else %}
             <a href="/chat" class="btn btn-primary">Go to Chat →</a>
-            {% endif %}
             {% else %}
             <a href="/register" class="btn btn-primary">Start Your Journey →</a>
             {% endif %}
@@ -57,16 +49,14 @@
                 cares.</p>
         </div>
         <div class="feature-card glass-card">
-            <div class="feature-icon">📊</div>
-            <h3>Doctor Monitoring</h3>
-            <p>Doctors get real-time dashboards with sentiment trends, risk alerts, and session summaries for each
-                patient.</p>
+            <div class="feature-icon">📹</div>
+            <h3>Video Calls with Lip Sync</h3>
+            <p>See your AI companion come alive with realistic lip-synced video calls — it feels like a real FaceTime conversation.</p>
         </div>
         <div class="feature-card glass-card">
-            <div class="feature-icon">🚨</div>
-            <h3>Crisis Detection</h3>
-            <p>AI detects signs of crisis and immediately alerts your assigned therapist for professional intervention.
-            </p>
+            <div class="feature-icon">💾</div>
+            <h3>Deep Memory</h3>
+            <p>Your AI remembers shared memories, inside jokes, past events, and every detail from your conversations — just like a real friend.</p>
         </div>
         <div class="feature-card glass-card">
             <div class="feature-icon">🎨</div>

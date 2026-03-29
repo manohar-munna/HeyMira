@@ -17,25 +17,50 @@ let mouthInterval = null;
 function startLipSync() {
     if (mouthInterval) clearInterval(mouthInterval);
     const mouthPath = document.getElementById('wa-mouth-path');
+    const cheekL = document.getElementById('wa-cheek-l');
+    const cheekR = document.getElementById('wa-cheek-r');
     if (!mouthPath) return;
 
-    // High-Fidelity Lip Shapes (Cubic Bezier curves with Cupid's bow)
+    // Realistic mouth shapes — natural lip parting with subtle cupid's bow
+    // Using a 0-60 viewBox, centered around x=30, y=20
     const shapes = [
-        "M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z", // Closed / Neutral
-        "M10,20 C15,5 25,5 30,10 C35,5 45,5 50,20 C45,38 15,38 10,20 Z",   // Open (A/O)
-        "M10,20 C15,12 25,12 30,15 C35,12 45,12 50,20 C45,28 15,28 10,20 Z", // Wide (E)
-        "M20,20 C23,10 27,10 30,15 C33,10 37,10 40,20 C37,30 23,30 20,20 Z", // Pouted (U/W)
-        "M10,20 C15,14 25,14 30,17 C35,14 45,14 50,20 C45,30 15,30 10,20 Z"  // Half-open
+        // Closed / Neutral — thin line with slight bow
+        { mouth: "M12,20 Q20,18 30,19 Q40,18 48,20 Q40,22 30,21 Q20,22 12,20 Z", cheek: 0 },
+        // Slightly open — relaxed small opening
+        { mouth: "M12,20 Q20,15 30,16 Q40,15 48,20 Q40,25 30,24 Q20,25 12,20 Z", cheek: 1 },
+        // Open (A/O sound) — wide vertical opening
+        { mouth: "M14,19 Q20,10 30,11 Q40,10 46,19 Q42,30 30,32 Q18,30 14,19 Z", cheek: 3 },
+        // Wide (E/I sound) — stretched horizontally, less vertical
+        { mouth: "M10,20 Q18,14 30,15 Q42,14 50,20 Q42,26 30,27 Q18,26 10,20 Z", cheek: 2 },
+        // Rounded (O/U sound) — small circular opening
+        { mouth: "M18,19 Q22,12 30,13 Q38,12 42,19 Q38,28 30,29 Q22,28 18,19 Z", cheek: 2 },
+        // Half-open — mid-speech natural position
+        { mouth: "M13,20 Q20,13 30,14 Q40,13 47,20 Q42,27 30,28 Q18,27 13,20 Z", cheek: 1 },
     ];
 
+    let lastShapeIdx = 0;
     mouthInterval = setInterval(() => {
         if (!isSpeaking) {
             stopLipSync();
             return;
         }
-        const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
-        mouthPath.setAttribute('d', randomShape);
-    }, 100); 
+        // Pick a different shape each time for variety
+        let idx = Math.floor(Math.random() * shapes.length);
+        while (idx === lastShapeIdx && shapes.length > 1) {
+            idx = Math.floor(Math.random() * shapes.length);
+        }
+        lastShapeIdx = idx;
+        const shape = shapes[idx];
+        mouthPath.setAttribute('d', shape.mouth);
+
+        // Cheek deformation — subtle scale on cheek ovals
+        if (cheekL && cheekR) {
+            const scale = 1 + (shape.cheek * 0.015);
+            const yShift = shape.cheek * 0.3;
+            cheekL.setAttribute('transform', `translate(0, ${yShift}) scale(${scale})`);
+            cheekR.setAttribute('transform', `translate(0, ${yShift}) scale(${scale})`);
+        }
+    }, 110); // Slightly varied timing for naturalism
 }
 
 function stopLipSync() {
@@ -45,8 +70,12 @@ function stopLipSync() {
     }
     const mouthPath = document.getElementById('wa-mouth-path');
     if (mouthPath) {
-        mouthPath.setAttribute('d', "M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z"); // Reset to closed
+        mouthPath.setAttribute('d', "M12,20 Q20,18 30,19 Q40,18 48,20 Q40,22 30,21 Q20,22 12,20 Z");
     }
+    const cheekL = document.getElementById('wa-cheek-l');
+    const cheekR = document.getElementById('wa-cheek-r');
+    if (cheekL) cheekL.setAttribute('transform', 'scale(1)');
+    if (cheekR) cheekR.setAttribute('transform', 'scale(1)');
 }
 
 let isVideoEnabled = false;
@@ -120,15 +149,32 @@ function startVoiceCall() {
     const avatarEl = document.getElementById('voice-avatar');
     const mouthOverlay = `
         <div class="wa-mouth-overlay">
-            <svg viewBox="0 0 60 40">
+            <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                    <linearGradient id="lip-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:#ff8a95;stop-opacity:1" />
-                        <stop offset="50%" style="stop-color:#ff5e6c;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#e63946;stop-opacity:1" />
-                    </linearGradient>
+                    <radialGradient id="mouth-inner-grad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" style="stop-color:#1a0a0a;stop-opacity:0.85" />
+                        <stop offset="70%" style="stop-color:#2d1215;stop-opacity:0.7" />
+                        <stop offset="100%" style="stop-color:#4a2028;stop-opacity:0.4" />
+                    </radialGradient>
+                    <radialGradient id="lip-tint" cx="50%" cy="50%" r="60%">
+                        <stop offset="0%" style="stop-color:#b86b6b;stop-opacity:0.35" />
+                        <stop offset="100%" style="stop-color:#8b5a5a;stop-opacity:0.1" />
+                    </radialGradient>
+                    <filter id="mouth-blur">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
+                    </filter>
                 </defs>
-                <path id="wa-mouth-path" class="wa-mouth-path" d="M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z" />
+                <!-- Cheek deformation zones (invisible but animatable) -->
+                <ellipse id="wa-cheek-l" cx="10" cy="18" rx="8" ry="6" fill="transparent" />
+                <ellipse id="wa-cheek-r" cx="50" cy="18" rx="8" ry="6" fill="transparent" />
+                <!-- Mouth interior (dark cavity) -->
+                <path id="wa-mouth-path" class="wa-mouth-path"
+                    d="M12,20 Q20,18 30,19 Q40,18 48,20 Q40,22 30,21 Q20,22 12,20 Z"
+                    filter="url(#mouth-blur)" />
+                <!-- Subtle lip tint overlay -->
+                <path class="wa-lip-tint"
+                    d="M12,20 Q20,18 30,19 Q40,18 48,20 Q40,22 30,21 Q20,22 12,20 Z"
+                    fill="url(#lip-tint)" />
             </svg>
         </div>`;
     

@@ -1,4 +1,4 @@
-"""HeyMira - AI Service (Natural, human-like responses with API key rotation)"""
+"""HeyMira - AI Service (Deep Persona Cloning + Streaming Responses)"""
 
 from services.key_manager import key_manager
 import google.generativeai as genai
@@ -30,6 +30,39 @@ Copy their EXACT writing style. Their word choices, abbreviations, emoji use, ev
         if past_events:
             events_context = "\n- SHARED MEMORIES AND PAST EVENTS you should know about and refer to naturally if they come up:\n  * " + "\n  * ".join(past_events)
 
+        # New deep traits
+        psychological_profile = ""
+        if hasattr(persona, 'psychological_profile') and persona.psychological_profile:
+            try:
+                psych = json.loads(persona.psychological_profile) if isinstance(persona.psychological_profile, str) else persona.psychological_profile
+                psychological_profile = f"\n- Attachment style: {psych.get('attachment_style', 'unknown')}\n- Conflict resolution: {psych.get('conflict_style', 'unknown')}\n- Love language: {psych.get('love_language', 'unknown')}\n- Emotional regulation: {psych.get('emotional_regulation', 'unknown')}"
+            except:
+                pass
+
+        grammar_habits = ""
+        if hasattr(persona, 'grammar_habits') and persona.grammar_habits:
+            grammar_habits = f"\n- Grammar habits: {persona.grammar_habits}"
+
+        texting_speed = ""
+        if hasattr(persona, 'texting_speed') and persona.texting_speed:
+            texting_speed = f"\n- Texting speed/frequency: {persona.texting_speed}"
+
+        topic_preferences = ""
+        if hasattr(persona, 'topic_preferences') and persona.topic_preferences:
+            topic_preferences = f"\n- Favorite topics to discuss: {persona.topic_preferences}"
+
+        argument_style = ""
+        if hasattr(persona, 'argument_style') and persona.argument_style:
+            argument_style = f"\n- How they argue/disagree: {persona.argument_style}"
+
+        affection_style = ""
+        if hasattr(persona, 'affection_style') and persona.affection_style:
+            affection_style = f"\n- How they show affection: {persona.affection_style}"
+
+        cultural_references = ""
+        if hasattr(persona, 'cultural_references') and persona.cultural_references:
+            cultural_references = f"\n- Cultural references they use: {persona.cultural_references}"
+
         persona_context = f"""
 You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Style: {persona.speaking_style}
@@ -42,7 +75,7 @@ You ARE "{persona.name}". Not an AI pretending — you ARE them.
 - Their phrases: {', '.join(phrases) if phrases else 'none'}
 - Emoji usage: {persona.emoji_usage}
 - Frequent emojis: {', '.join(persona.get_frequent_emojis()) if persona.get_frequent_emojis() else 'none'}
-- Specific word choices/slang: {', '.join(persona.get_word_choices()) if persona.get_word_choices() else 'none'}{events_context}
+- Specific word choices/slang: {', '.join(persona.get_word_choices()) if persona.get_word_choices() else 'none'}{events_context}{psychological_profile}{grammar_habits}{texting_speed}{topic_preferences}{argument_style}{affection_style}{cultural_references}
 {raw_excerpt}
 NEVER break character. Talk EXACTLY like them. Mimic their emoji usage, their exact slang, their tone, everything.
 """
@@ -60,6 +93,10 @@ RULES FOR HOW TO TALK:
 8. Ask ONE follow-up question at most. Don't interrogate.
 9. Sometimes just validate with a short reaction before asking anything.
 10. ALWAYS refer to the shared memories provided if relevant. NEVER break character to explain you are an AI.
+11. If they mention a specific event you know about from past events, reference it naturally like "oh yeah I remember when..."
+12. Match their grammar EXACTLY — if they use lowercase, you use lowercase. If they skip punctuation, skip it too.
+13. Mirror their texting cadence — if they send short rapid texts, keep yours short. If they write longer paragraphs, do that.
+14. Use their cultural references and inside jokes when applicable.
 
 BAD (robotic): "I understand that must be really difficult for you."
 GOOD (human): "damn that's rough honestly. what happened tho?"
@@ -77,7 +114,7 @@ You are texting them right now. Keep it 100% real and identical to their writing
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-3.1-flash-lite-preview',
+            'gemini-2.0-flash-lite',
             [{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=150,  # Short responses
@@ -90,32 +127,185 @@ You are texting them right now. Keep it 100% real and identical to their writing
         return "hey sorry, having a weird moment rn. what were you saying?"
 
 
+def generate_ai_response_stream(persona, conversation_history, user_message):
+    """Generate a persona-aware AI response as a stream (yields chunks)."""
+
+    # Build persona context (same as above)
+    persona_context = ""
+    if persona:
+        traits = persona.get_traits()
+        phrases = persona.get_phrases()
+
+        raw_excerpt = ""
+        if hasattr(persona, 'raw_text') and persona.raw_text:
+            raw_excerpt = f"""
+
+Here are ACTUAL messages from this person — study how they type:
+---
+{persona.raw_text[:3000]}
+---
+Copy their EXACT writing style.
+"""
+
+        past_events = persona.get_past_events()
+        events_context = ""
+        if past_events:
+            events_context = "\n- SHARED MEMORIES:\n  * " + "\n  * ".join(past_events)
+
+        persona_context = f"""
+You ARE "{persona.name}". Not an AI pretending — you ARE them.
+- Style: {persona.speaking_style}
+- Tone: {persona.tone}
+- Vocab: {persona.vocabulary_level}
+- Vibe: {persona.emotional_tone}
+- Humor: {persona.humor_level}
+- How supportive: {persona.supportiveness}
+- Message length: {persona.response_length}
+- Their phrases: {', '.join(phrases) if phrases else 'none'}
+- Emoji usage: {persona.emoji_usage}
+- Frequent emojis: {', '.join(persona.get_frequent_emojis()) if persona.get_frequent_emojis() else 'none'}
+- Specific word choices/slang: {', '.join(persona.get_word_choices()) if persona.get_word_choices() else 'none'}{events_context}
+{raw_excerpt}
+NEVER break character. Talk EXACTLY like them.
+"""
+
+    system_prompt = f"""You are EXACTLY this person having a real text conversation. YOU ARE NOT AN AI. {persona_context}
+
+RULES: Keep messages SHORT (1-3 sentences). Sound real. No bullet points. Use their emojis and slang. Match their energy.
+If they mention a known past event, reference it naturally.
+Match their grammar EXACTLY — lowercase if they use lowercase, skip punctuation if they do.
+
+You are texting them right now. Keep it 100% real."""
+
+    messages_context = ""
+    if conversation_history:
+        for msg in conversation_history[-15:]:
+            role_label = "Them" if msg['role'] == 'user' else "You"
+            messages_context += f"{role_label}: {msg['content']}\n"
+
+    prompt = f"{messages_context}Them: {user_message}\nYou:"
+
+    try:
+        api_key = key_manager.get_working_key()
+        if api_key:
+            genai.configure(api_key=api_key)
+
+        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        response = model.generate_content(
+            [{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt}]}],
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=150,
+                temperature=0.9,
+            ),
+            stream=True
+        )
+
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        print(f"AI Stream Error: {e}")
+        yield "hey sorry, having a weird moment rn. what were you saying?"
+
+
 def analyze_persona_from_text(text, person_name=""):
-    """Analyze communication patterns from extracted text to build a persona profile."""
-    prompt = f"""Analyze the following conversation text and extract the communication personality profile of the main speaker. 
-Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these fields:
+    """Analyze communication patterns from extracted text to build a comprehensive persona profile.
+    This is the DEEP CLONING engine — 50+ line prompt for maximum accuracy."""
+    prompt = f"""You are an expert psycholinguistic analyst and personality profiler. Your job is to deeply study a person's communication patterns from their chat messages and create an EXHAUSTIVE personality clone profile.
+
+ANALYSIS REQUIREMENTS — Be extremely thorough and specific. Do not give generic answers.
+Study the text carefully and identify:
+
+1. SPEAKING STYLE: How do they construct sentences? Do they use fragments, run-on sentences, or complete sentences? Do they capitalize properly or use all lowercase? Do they use periods, or skip punctuation entirely?
+
+2. TONE: What is the overall emotional undertone? Are they sarcastic, warm, cold, playful, passive-aggressive, anxious, confident? Give a specific multi-word description, not just one word.
+
+3. VOCABULARY LEVEL: Is their language simple/colloquial, moderate, or sophisticated? Do they use slang heavily? Do they code-switch between languages?
+
+4. COMMON PHRASES: What are their go-to phrases, greetings, sign-offs, reactions? Things they say repeatedly. Include exact spellings they use (e.g., "yaa", "haan", "bruhhh", "ngl", "frfr").
+
+5. EMOTIONAL TONE: What is the dominant emotional undercurrent? Are they anxious-but-hiding-it, genuinely optimistic, melancholic, nonchalant?
+
+6. HUMOR: Do they joke often? Is it dark humor, sarcasm, puns, memes, self-deprecating? Rate from none to very high and describe the TYPE of humor.
+
+7. SUPPORTIVENESS: How do they react when the other person shares problems? Do they give advice, just listen, minimize, redirect to themselves, or offer practical help?
+
+8. RESPONSE LENGTH: Do they send short rapid-fire messages (1-5 words each), moderate messages (1-2 sentences), or long detailed paragraphs?
+
+9. EMOJI USAGE: How heavily do they use emojis? Do they use them at the end of every message, only sometimes, or never? Do they use emojis as standalone responses?
+
+10. FREQUENT EMOJIS: List the EXACT emojis they use most, in order of frequency. Include emoticons like :) or xD if used.
+
+11. WORD CHOICES: List specific slang, abbreviations, misspellings, transliterations, or unique words they use (e.g., "gonna", "wanna", "tho", "rn", "nvm", "lol", "haha", "bruh").
+
+12. PERSONALITY TRAITS: Rate each trait on a scale of 1-10 based on the conversation evidence:
+    - Warmth, Openness, Empathy, Assertiveness, Positivity, Neuroticism, Agreeableness, Conscientiousness
+
+13. PAST EVENTS: Extract EVERY single memory, event, story, or experience mentioned in the conversation. Include:
+    - Trips, outings, hangouts
+    - Fights, disagreements, apologies
+    - Inside jokes and their context
+    - Shared experiences (movies watched, food eaten, places visited)
+    - Important life events (birthdays, exams, relationships, breakups, jobs)
+    - ANY factual information about their life (where they live, what they study/work, pets, family members)
+    Be EXHAUSTIVE. List at least 15-30 events if available. Use natural phrasing like "We went to Goa last summer" or "Had that argument about the party".
+
+14. PSYCHOLOGICAL PROFILE:
+    - Attachment style (secure, anxious, avoidant, disorganized)
+    - How they handle conflict (confrontational, avoidant, passive-aggressive, collaborative)
+    - Primary love language (words of affirmation, quality time, acts of service, physical touch, gifts)
+    - Emotional regulation (do they vent openly, suppress, rationalize, or explode?)
+
+15. GRAMMAR HABITS: Do they use proper grammar or break rules purposefully? Do they capitalize "I"? Do they use apostrophes in contractions? Do they type in a specific language pattern or mix languages (e.g., Hinglish)?
+
+16. TEXTING SPEED: Based on message patterns, do they seem like a fast texter who sends many short messages, or a slow texter who sends fewer longer messages?
+
+17. TOPIC PREFERENCES: What subjects do they gravitate toward? (relationships, work/studies, memes, gossip, philosophy, food, travel, etc.)
+
+18. ARGUMENT STYLE: How do they disagree or express displeasure? Do they go silent, use sarcasm, confront directly, or get emotional?
+
+19. AFFECTION STYLE: How do they express care? Pet names, compliments, checking in, sharing things, teasing?
+
+20. CULTURAL REFERENCES: What movies, songs, shows, games, or cultural elements do they reference? What generation/demographic do they seem to belong to?
+
+Return ONLY a valid JSON object (no markdown, no code blocks, no explanation) with exactly these fields:
 
 {{
     "name": "{person_name or 'Unknown'}",
-    "speaking_style": "description of how they speak (e.g., casual and warm, formal and measured, energetic and expressive)",
-    "tone": "overall tone (e.g., supportive, sarcastic, cheerful, calm, intense)",
-    "vocabulary_level": "simple/moderate/sophisticated",
-    "common_phrases": ["phrase1", "phrase2", "phrase3", "phrase4", "phrase5"],
-    "emotional_tone": "dominant emotional undertone (e.g., caring, anxious, optimistic, melancholic)",
-    "humor_level": "none/subtle/moderate/high",
-    "supportiveness": "low/moderate/high/very_high",
-    "response_length": "brief/moderate/detailed",
-    "emoji_usage": "description of how they use emojis (e.g., heavily uses laughing emojis, no emojis, only hearts)",
-    "frequent_emojis": ["😂", "💀", "❤️"],
-    "word_choices": ["slang1", "slang2", "specific greeting", "unique spelling like 'tho' or 'rn'"],
+    "speaking_style": "detailed multi-word description",
+    "tone": "specific multi-word tone description",
+    "vocabulary_level": "simple/moderate/sophisticated with notes",
+    "common_phrases": ["exact phrase 1", "exact phrase 2", "exact phrase 3", "exact phrase 4", "exact phrase 5", "phrase 6", "phrase 7", "phrase 8"],
+    "emotional_tone": "detailed emotional undercurrent description",
+    "humor_level": "none/subtle/moderate/high/very_high — with type description",
+    "supportiveness": "low/moderate/high/very_high — with how they show it",
+    "response_length": "brief/moderate/detailed — with typical message structure",
+    "emoji_usage": "detailed description of emoji behavior",
+    "frequent_emojis": ["😂", "💀", "❤️", "🥺", "😭"],
+    "word_choices": ["slang1", "slang2", "abbreviation1", "unique_greeting", "unique_spelling"],
     "personality_traits": {{
         "warmth": 1-10,
         "openness": 1-10,
         "empathy": 1-10,
         "assertiveness": 1-10,
-        "positivity": 1-10
+        "positivity": 1-10,
+        "neuroticism": 1-10,
+        "agreeableness": 1-10,
+        "conscientiousness": 1-10
     }},
-    "past_events": ["EXTENSIVE list of ALL mentioned memories, e.g. 'We went to the beach last summer'", "Memory 2, e.g. 'Had a fight about the dishes'", "Inside joke about XYZ", "Every minor and major event they talk about"]
+    "past_events": ["Memory 1 in natural phrasing", "Memory 2", "Memory 3", "...at least 15-30 entries if available"],
+    "psychological_profile": {{
+        "attachment_style": "secure/anxious/avoidant/disorganized — with evidence",
+        "conflict_style": "description of how they handle disagreements",
+        "love_language": "primary love language with evidence",
+        "emotional_regulation": "how they manage emotions"
+    }},
+    "grammar_habits": "detailed description of their grammar patterns and deviations",
+    "texting_speed": "description of their texting cadence and patterns",
+    "topic_preferences": "comma-separated list of favorite discussion topics",
+    "argument_style": "how they express disagreement or frustration",
+    "affection_style": "how they show love and care in text",
+    "cultural_references": "movies, music, shows, games, memes they reference"
 }}
 
 Conversation text to analyze:
@@ -123,10 +313,10 @@ Conversation text to analyze:
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-3.1-flash-lite-preview',
+            'gemini-2.0-flash-lite',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
-                max_output_tokens=2500,
+                max_output_tokens=4000,
                 temperature=0.3,
             )
         )
@@ -155,8 +345,21 @@ Conversation text to analyze:
             "word_choices": [],
             "past_events": [],
             "personality_traits": {
-                "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7
-            }
+                "warmth": 7, "openness": 7, "empathy": 8, "assertiveness": 5, "positivity": 7,
+                "neuroticism": 4, "agreeableness": 7, "conscientiousness": 5
+            },
+            "psychological_profile": {
+                "attachment_style": "unknown",
+                "conflict_style": "unknown",
+                "love_language": "unknown",
+                "emotional_regulation": "unknown"
+            },
+            "grammar_habits": "standard",
+            "texting_speed": "moderate",
+            "topic_preferences": "general",
+            "argument_style": "unknown",
+            "affection_style": "unknown",
+            "cultural_references": "unknown"
         }
 
 
@@ -170,7 +373,7 @@ Conversation text:
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-3.1-flash-lite-preview',
+            'gemini-2.0-flash-lite',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=150,
@@ -201,7 +404,6 @@ Important:
 
     try:
         # Prepare multimodal part
-        # image_data_base64 is like "data:image/jpeg;base64,..."
         if ',' in image_data_base64:
             mime_type = image_data_base64.split(';')[0].split(':')[1]
             data = image_data_base64.split(',')[1]
@@ -210,7 +412,7 @@ Important:
             data = image_data_base64
 
         response = key_manager.call_with_retry(
-            'gemini-3.1-flash-lite-preview', 
+            'gemini-2.0-flash-lite', 
             [
                 {
                     "role": "user",
@@ -236,4 +438,3 @@ Important:
     except Exception as e:
         print(f"Lip Detection Error: {e}")
         return {"x": 50, "y": 75, "found": False}
-

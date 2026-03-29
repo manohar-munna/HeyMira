@@ -3,6 +3,20 @@ import io
 import re
 
 
+def extract_text_from_txt(file_stream):
+    """Extract text content from a TXT file."""
+    try:
+        content = file_stream.read()
+        if isinstance(content, bytes):
+            content = content.decode('utf-8', errors='ignore')
+        return content.strip()
+    except Exception as e:
+        print(f"TXT Extraction Error: {e}")
+        return ""
+
+
+
+
 def extract_text_from_pdf(file_stream):
     """Extract text content from a PDF file."""
     try:

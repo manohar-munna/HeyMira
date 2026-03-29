@@ -108,8 +108,10 @@ window.sendMessage = async function() {
     scrollToBottom();
 
     try {
-        const data = await apiCall('/api/chat/send', {
+        // Use streaming endpoint for instant typing effect
+        const response = await fetch('/api/chat/send_stream', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 conversation_id: currentConversation.id,
                 content: content,
@@ -117,21 +119,88 @@ window.sendMessage = async function() {
             })
         });
 
-        if (typing) typing.classList.remove('visible');
-        addMessageToUI('ai', data.ai_message.content);
-
-        if (!currentConversation.title || currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation' || (currentConversation.message_count || 0) <= 2) {
-            currentConversation.title = data.user_message.content.substring(0, 80);
-            const titleEl = document.getElementById('chat-title');
-            if (titleEl) titleEl.textContent = currentConversation.title;
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'Something went wrong');
         }
 
-        currentConversation.message_count = (currentConversation.message_count || 0) + 2;
-        renderConversationList();
+        if (typing) typing.classList.remove('visible');
 
+        // Create an empty AI message bubble to stream into
+        const area = document.getElementById('messages-area');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message ai';
+        let aiAvatar = '💜';
+        if (activePersona && activePersona.profile_image) {
+            aiAvatar = `<img src="${activePersona.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        }
+        msgDiv.innerHTML = `
+            <div class="msg-avatar">${aiAvatar}</div>
+            <div>
+                <div class="msg-content" id="stream-msg-content"></div>
+                <div class="msg-time">${getCurrentTime()}</div>
+            </div>
+        `;
+        area.appendChild(msgDiv);
+        scrollToBottom();
+
+        const streamContent = document.getElementById('stream-msg-content');
+        let fullText = '';
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const eventData = JSON.parse(line.slice(6));
+                        if (eventData.type === 'chunk') {
+                            fullText += eventData.text;
+                            streamContent.textContent = fullText;
+                            scrollToBottom();
+                        } else if (eventData.type === 'done') {
+                            // Remove the temporary ID so future streams work
+                            streamContent.removeAttribute('id');
+                            // Update conversation metadata
+                            if (!currentConversation.title || currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation' || (currentConversation.message_count || 0) <= 2) {
+                                currentConversation.title = content.substring(0, 80);
+                                const titleEl = document.getElementById('chat-title');
+                                if (titleEl) titleEl.textContent = currentConversation.title;
+                            }
+                            currentConversation.message_count = (currentConversation.message_count || 0) + 2;
+                            renderConversationList();
+                        }
+                    } catch (e) { /* skip malformed lines */ }
+                }
+            }
+        }
     } catch (error) {
         if (typing) typing.classList.remove('visible');
-        showToast(error.message, 'error');
+        // Fallback to non-streaming
+        try {
+            const data = await apiCall('/api/chat/send', {
+                method: 'POST',
+                body: JSON.stringify({
+                    conversation_id: currentConversation.id,
+                    content: content,
+                    is_voice: false
+                })
+            });
+            addMessageToUI('ai', data.ai_message.content);
+            currentConversation.message_count = (currentConversation.message_count || 0) + 2;
+            renderConversationList();
+        } catch (fallbackError) {
+            showToast(fallbackError.message, 'error');
+        }
     }
 };
 

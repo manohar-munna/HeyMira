@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models.models import Persona
-from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages, extract_chat_participants, extract_person_messages_with_dates
+from services.persona_service import extract_text_from_pdf, extract_text_from_txt, clean_whatsapp_export, extract_person_messages, extract_chat_participants, extract_person_messages_with_dates
 from services.ai_service import analyze_persona_from_text, generate_chat_summary, detect_lip_coordinates
 from werkzeug.utils import secure_filename
 from flask import current_app
@@ -10,6 +10,20 @@ import io
 import json
 
 persona_bp = Blueprint('persona', __name__)
+
+ALLOWED_EXTENSIONS = {'pdf', 'txt'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def extract_text_from_file(file):
+    """Extract text from either PDF or TXT file."""
+    filename = file.filename.lower()
+    if filename.endswith('.pdf'):
+        return extract_text_from_pdf(file)
+    elif filename.endswith('.txt'):
+        return extract_text_from_txt(file)
+    return ""
 
 @persona_bp.route('/api/persona/analyze_chat', methods=['POST'])
 @login_required
@@ -22,13 +36,13 @@ def analyze_chat():
     if not file.filename:
         return jsonify({'error': 'No file selected'}), 400
 
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({'error': 'Only PDF files are supported'}), 400
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Only PDF and TXT files are supported'}), 400
 
-    # Extract text from PDF
-    text = extract_text_from_pdf(file)
+    # Extract text
+    text = extract_text_from_file(file)
     if not text:
-        return jsonify({'error': 'Could not extract text from PDF'}), 400
+        return jsonify({'error': 'Could not extract text from file'}), 400
 
     # Find participants
     participants = extract_chat_participants(text)
@@ -53,16 +67,16 @@ def upload_persona():
     if not file.filename:
         return jsonify({'error': 'No file selected'}), 400
 
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({'error': 'Only PDF files are supported'}), 400
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Only PDF and TXT files are supported'}), 400
 
     if not person_name:
         return jsonify({'error': 'Person name is required'}), 400
 
-    # Extract text from PDF
-    text = extract_text_from_pdf(file)
+    # Extract text
+    text = extract_text_from_file(file)
     if not text:
-        return jsonify({'error': 'Could not extract text from PDF'}), 400
+        return jsonify({'error': 'Could not extract text from file'}), 400
 
     # Get the raw text with dates for chatting context
     person_text_with_dates = extract_person_messages_with_dates(text, person_name)
@@ -73,7 +87,7 @@ def upload_persona():
     # Try to extract specific person's messages for analysis (without dates)
     person_text = extract_person_messages(cleaned_text, person_name)
 
-    # Analyze personality using AI
+    # Analyze personality using AI (deep 50+ line prompt)
     profile = analyze_persona_from_text(person_text, person_name)
 
     # Handle optional persona image
@@ -99,7 +113,10 @@ def upload_persona():
             else:
                 print("Warning: Image too large, skipping base64 encoding to avoid Firestore limits.")
 
-    # Save persona to Firestore
+    # Extract deep profiling data
+    psych_profile = profile.get('psychological_profile', {})
+
+    # Save persona to Firestore with all deep fields
     persona = Persona(
         user_id=current_user.id,
         name=profile.get('name', person_name),
@@ -116,7 +133,18 @@ def upload_persona():
         profile_image=profile_image_url,
         past_events=json.dumps(profile.get('past_events', [])),
         raw_text=person_text_with_dates[:10000],
-        lip_coords=json.dumps(lip_coords)
+        emoji_usage=profile.get('emoji_usage', ''),
+        frequent_emojis=json.dumps(profile.get('frequent_emojis', [])),
+        word_choices=json.dumps(profile.get('word_choices', [])),
+        lip_coords=json.dumps(lip_coords),
+        # Deep cloning fields
+        psychological_profile=json.dumps(psych_profile),
+        grammar_habits=profile.get('grammar_habits', ''),
+        texting_speed=profile.get('texting_speed', ''),
+        topic_preferences=profile.get('topic_preferences', ''),
+        argument_style=profile.get('argument_style', ''),
+        affection_style=profile.get('affection_style', ''),
+        cultural_references=profile.get('cultural_references', ''),
     )
     persona.save()
 

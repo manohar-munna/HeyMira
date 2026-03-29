@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 from models.models import Conversation, Message, Persona, User
-from services.ai_service import generate_ai_response
+from services.ai_service import generate_ai_response, generate_ai_response_stream
 from datetime import datetime
+import json
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -122,4 +123,81 @@ def delete_conversation(conversation_id):
     
     return jsonify({
         'message': 'Conversation deleted successfully'
+    })
+
+
+@chat_bp.route('/api/chat/send_stream', methods=['POST'])
+@login_required
+def send_message_stream():
+    """Stream AI response via Server-Sent Events for instant typing effect."""
+    data = request.get_json()
+    conversation_id = data.get('conversation_id')
+    content = data.get('content', '').strip()
+    is_voice = data.get('is_voice', False)
+
+    if not conversation_id or not content:
+        return jsonify({'error': 'conversation_id and content are required'}), 400
+
+    conv = Conversation.get_by_id(conversation_id)
+    if not conv or conv.user_id != current_user.id:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    # Save user message
+    user_msg = Message(
+        conversation_id=conv.id,
+        role='user',
+        content=content,
+        is_voice=is_voice
+    )
+    user_msg.save()
+
+    # Get conversation history
+    messages = conv.get_messages()
+    history = [{'role': m.role, 'content': m.content} for m in messages]
+
+    # Get persona if assigned
+    persona = Persona.get_by_id(conv.persona_id) if conv.persona_id else None
+
+    # Update title on first message
+    existing_msgs = conv.get_messages()
+    if len(existing_msgs) <= 1:
+        conv.title = content[:80] + ('...' if len(content) > 80 else '')
+        conv.save()
+
+    def generate():
+        full_response = ""
+        try:
+            # Send user message ID first
+            yield f"data: {json.dumps({'type': 'user_msg', 'message': user_msg.to_dict()})}\n\n"
+
+            for chunk in generate_ai_response_stream(persona, history, content):
+                full_response += chunk
+                yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+
+            # Save the complete AI message
+            ai_msg = Message(
+                conversation_id=conv.id,
+                role='ai',
+                content=full_response.strip(),
+                is_voice=is_voice
+            )
+            ai_msg.save()
+
+            yield f"data: {json.dumps({'type': 'done', 'ai_message': ai_msg.to_dict()})}\n\n"
+        except Exception as e:
+            fallback = "hey sorry, having a weird moment rn. what were you saying?"
+            ai_msg = Message(
+                conversation_id=conv.id,
+                role='ai',
+                content=fallback,
+                is_voice=is_voice
+            )
+            ai_msg.save()
+            yield f"data: {json.dumps({'type': 'chunk', 'text': fallback})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'ai_message': ai_msg.to_dict()})}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+        'Connection': 'keep-alive'
     })

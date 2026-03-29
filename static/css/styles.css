@@ -1174,13 +1174,12 @@ select.form-input {
 
 .wa-avatar-container.video-mode .wa-mouth-overlay {
     bottom: 25%;
-    width: 80px;
+    width: 70px;
     height: 40px;
 }
 
 .wa-avatar-container.video-mode .wa-mouth-path {
-    stroke-width: 4;
-    stroke: #ffffff;
+    stroke: none;
 }
 
 .wa-avatar.is-speaking-pulse {
@@ -1223,18 +1222,20 @@ select.form-input {
     border-radius: 20px;
 }
 
-/* Vector Lip-Sync Styles - More Realistic Lips */
+/* Vector Lip-Sync Styles — Natural Face-Blended Mouth */
 .wa-mouth-overlay {
     position: absolute;
     bottom: 22%;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
-    height: 40px;
+    width: 55px;
+    height: 35px;
     display: none;
     z-index: 5;
     pointer-events: none;
-    filter: drop-shadow(0 0 10px rgba(255, 71, 87, 0.4));
+    mix-blend-mode: multiply;
+    opacity: 0.92;
+    filter: blur(0.3px);
 }
 
 .wa-avatar.is-speaking-pulse .wa-mouth-overlay {
@@ -1242,18 +1243,14 @@ select.form-input {
 }
 
 .wa-mouth-path {
-    fill: url(#lip-gradient);
-    stroke: rgba(255, 255, 255, 0.2);
-    stroke-width: 0.5;
-    transition: d 0.12s ease-in-out;
+    fill: url(#mouth-inner-grad);
+    stroke: none;
+    transition: d 0.09s ease-in-out;
 }
 
-/* Define SVG Gradient in CSS via SVG Injection or just use a solid color if not possible in CSS alone */
-/* Since I can't easily inject a defs block here without JS, I'll use a better solid color and glow */
-.wa-mouth-path {
-    fill: #ff5e6c;
-    stroke: rgba(255, 255, 255, 0.3);
-    filter: drop-shadow(0 0 2px rgba(0,0,0,0.2));
+.wa-lip-tint {
+    pointer-events: none;
+    transition: d 0.09s ease-in-out;
 }
 
 /* Persona Selection - Custom Dropdown Vibe */

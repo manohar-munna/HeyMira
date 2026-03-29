@@ -1,4 +1,4 @@
-// HeyMira - PDF Upload & Persona Creation
+// HeyMira - File Upload & Persona Creation (PDF + TXT)
 
 let selectedFile = null;
 
@@ -23,10 +23,11 @@ function setupDropzone() {
         e.preventDefault();
         dropzone.classList.remove('dragover');
         const file = e.dataTransfer.files[0];
-        if (file && file.type === 'application/pdf') {
+        const name = file ? file.name.toLowerCase() : '';
+        if (file && (file.type === 'application/pdf' || name.endsWith('.pdf') || name.endsWith('.txt') || file.type === 'text/plain')) {
             handleFile(file);
         } else {
-            showToast('Please drop a PDF file', 'error');
+            showToast('Please drop a PDF or TXT file', 'error');
         }
     });
 }
@@ -255,7 +256,7 @@ async function uploadPersona() {
     }
 
     if (!selectedFile) {
-        showToast('Please select a PDF file', 'error');
+        showToast('Please select a PDF or TXT file', 'error');
         return;
     }
 
@@ -348,8 +349,24 @@ function displayPersonaResult(persona) {
         { label: 'Humor Level', value: persona.humor_level },
         { label: 'Supportiveness', value: persona.supportiveness },
         { label: 'Response Length', value: persona.response_length },
-        { label: 'Common Phrases', value: (persona.common_phrases || []).slice(0, 3).join(', ') || 'N/A' }
+        { label: 'Emoji Usage', value: persona.emoji_usage },
+        { label: 'Common Phrases', value: (persona.common_phrases || []).slice(0, 5).join(', ') || 'N/A' },
+        { label: 'Word Choices/Slang', value: (persona.word_choices || []).slice(0, 5).join(', ') || 'N/A' },
+        { label: 'Frequent Emojis', value: (persona.frequent_emojis || []).join(' ') || 'N/A' },
+        { label: 'Grammar Habits', value: persona.grammar_habits || 'N/A' },
+        { label: 'Texting Speed', value: persona.texting_speed || 'N/A' },
+        { label: 'Favorite Topics', value: persona.topic_preferences || 'N/A' },
+        { label: 'Argument Style', value: persona.argument_style || 'N/A' },
+        { label: 'Affection Style', value: persona.affection_style || 'N/A' },
+        { label: 'Cultural References', value: persona.cultural_references || 'N/A' },
     ];
+
+    // Add psychological profile traits
+    const psych = persona.psychological_profile || {};
+    if (psych.attachment_style) traits.push({ label: 'Attachment Style', value: psych.attachment_style });
+    if (psych.conflict_style) traits.push({ label: 'Conflict Style', value: psych.conflict_style });
+    if (psych.love_language) traits.push({ label: 'Love Language', value: psych.love_language });
+    if (psych.emotional_regulation) traits.push({ label: 'Emotional Regulation', value: psych.emotional_regulation });
 
     grid.innerHTML = traits.map(t => `
         <div class="trait-item">
@@ -357,6 +374,44 @@ function displayPersonaResult(persona) {
             <div class="trait-value">${t.value || 'N/A'}</div>
         </div>
     `).join('');
+
+    // Add personality traits radar
+    const personalityTraits = persona.personality_traits || {};
+    if (Object.keys(personalityTraits).length > 0) {
+        const traitSection = document.createElement('div');
+        traitSection.style.cssText = 'grid-column: 1 / -1; margin-top: 16px;';
+        traitSection.innerHTML = `
+            <div class="trait-label" style="margin-bottom: 10px; font-size: 0.85rem;">PERSONALITY SCORES</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${Object.entries(personalityTraits).map(([k, v]) => `
+                    <div style="flex:1; min-width: 80px; padding:8px 12px; background:var(--bg-input); border-radius:8px; text-align:center;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">${k}</div>
+                        <div style="font-size:1.1rem; font-weight:700; color:var(--accent);">${v}/10</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        grid.appendChild(traitSection);
+    }
+
+    // Show past events section
+    const pastEvents = persona.past_events || [];
+    if (pastEvents.length > 0) {
+        const eventsSection = document.createElement('div');
+        eventsSection.style.cssText = 'grid-column: 1 / -1; margin-top: 20px;';
+        eventsSection.innerHTML = `
+            <div class="trait-label" style="margin-bottom: 12px; font-size: 0.85rem;">📝 SHARED MEMORIES & PAST EVENTS (${pastEvents.length} found)</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 8px;">
+                ${pastEvents.map((evt, i) => `
+                    <div style="padding: 10px 14px; background: var(--bg-input); border-radius: 10px; border-left: 3px solid var(--accent); font-size: 0.88rem; color: var(--text-secondary); line-height: 1.4;">
+                        <span style="color: var(--text-muted); font-size: 0.75rem; margin-right: 6px;">#${i + 1}</span>
+                        ${escapeHtml(evt)}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        grid.appendChild(eventsSection);
+    }
 
     result.style.display = 'block';
     result.scrollIntoView({ behavior: 'smooth' });
