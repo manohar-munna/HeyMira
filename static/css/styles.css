@@ -1147,6 +1147,32 @@ select.form-input {
     animation: avatar-speak-pulse 0.2s ease-in-out infinite alternate;
 }
 
+/* Vector Lip-Sync Styles */
+.wa-mouth-overlay {
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 30px;
+    display: none;
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.wa-avatar.is-speaking-pulse .wa-mouth-overlay {
+    display: block;
+}
+
+.wa-mouth-path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.85);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: d 0.1s ease-in-out;
+}
+
 @keyframes avatar-speak-pulse {
     from {
         transform: scale(1);

@@ -8,6 +8,47 @@ let isSpeaking = false;
 let isThinking = false;
 let isMuted = false;
 let isSpeakerOff = false;
+let mouthInterval = null;
+
+// ═══════════════════════════════════════════
+//  LIP SYNC ENGINE
+// ═══════════════════════════════════════════
+
+function startLipSync() {
+    if (mouthInterval) clearInterval(mouthInterval);
+    const mouthPath = document.getElementById('wa-mouth-path');
+    if (!mouthPath) return;
+
+    // Different mouth shapes (Phonemes)
+    const shapes = [
+        "M10,20 Q30,20 50,20", // Closed
+        "M10,20 Q30,40 50,20", // Open (A/O)
+        "M10,20 Q30,25 50,20", // Wide (E)
+        "M15,20 Q30,35 45,20", // Narrow (U/W)
+        "M10,20 Q30,30 50,20"  // Half-open
+    ];
+
+    mouthInterval = setInterval(() => {
+        if (!isSpeaking) {
+            stopLipSync();
+            return;
+        }
+        // Pick a random shape from the phoneme list
+        const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+        mouthPath.setAttribute('d', randomShape);
+    }, 120); // Sync speed
+}
+
+function stopLipSync() {
+    if (mouthInterval) {
+        clearInterval(mouthInterval);
+        mouthInterval = null;
+    }
+    const mouthPath = document.getElementById('wa-mouth-path');
+    if (mouthPath) {
+        mouthPath.setAttribute('d', "M10,20 Q30,20 50,20"); // Reset to closed
+    }
+}
 
 // ═══════════════════════════════════════════
 //  TOGGLE / START / END
@@ -50,10 +91,12 @@ function startVoiceCall() {
 
     // Set avatar image if available
     const avatarEl = document.getElementById('voice-avatar');
+    const mouthOverlay = `<div class="wa-mouth-overlay"><svg viewBox="0 0 60 40"><path id="wa-mouth-path" class="wa-mouth-path" d="M10,20 Q30,20 50,20" /></svg></div>`;
+    
     if (typeof activePersona !== 'undefined' && activePersona && activePersona.profile_image) {
-        avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">`;
+        avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">${mouthOverlay}`;
     } else {
-        avatarEl.innerHTML = '💜';
+        avatarEl.innerHTML = `💜${mouthOverlay}`;
     }
 
     // Reset UI
@@ -97,22 +140,22 @@ function startVoiceCall() {
 
         // When we have a final result, wait briefly then send
         if (finalTranscript.trim().length > 0) {
-        clearTimeout(recognition._sendTimeout);
-        recognition._sendTimeout = setTimeout(() => {
-        if (finalTranscript.trim()) {
-        const msg = finalTranscript.trim();
-        finalTranscript = '';
-        isThinking = true;
-        setCallStatus('thinking');
-        document.getElementById('wa-transcript-user').classList.remove('active');
+            clearTimeout(recognition._sendTimeout);
+            recognition._sendTimeout = setTimeout(() => {
+                if (finalTranscript.trim()) {
+                    const msg = finalTranscript.trim();
+                    finalTranscript = '';
+                    isThinking = true;
+                    setCallStatus('thinking');
+                    document.getElementById('wa-transcript-user').classList.remove('active');
 
-        // Pause recognition while AI responds
-        try { recognition.abort(); } catch (e) { }
-        sendVoiceMessage(msg);
+                    // Pause recognition while AI responds
+                    try { recognition.abort(); } catch (e) { }
+                    sendVoiceMessage(msg);
+                }
+            }, 400); // 400ms for "immediate" response after pausing
         }
-        }, 500); // Reduced to 500ms for "immediate" response after pausing
-        }
-        };
+    };
     recognition.onend = () => {
         // Auto-restart if call is active and we're not speaking
         if (isVoiceActive && !isSpeaking && !isThinking) {
@@ -309,6 +352,7 @@ function speakResponse(text) {
     isThinking = false;
     isSpeaking = true;
     setCallStatus('speaking');
+    startLipSync(); // Trigger phoneme animation
 
     // Add audio-reactive pulse effect
     const avatar = document.getElementById('voice-avatar');
@@ -352,6 +396,7 @@ function speakResponse(text) {
     utterance.onend = () => {
         // Remove pulse effect
         if (avatar) avatar.classList.remove('is-speaking-pulse');
+        stopLipSync(); // Close mouth
         
         // Wait briefly for room echo to die down before re-enabling listening
         setTimeout(() => {
@@ -371,6 +416,7 @@ function speakResponse(text) {
     utterance.onerror = () => {
         // Remove pulse effect
         if (avatar) avatar.classList.remove('is-speaking-pulse');
+        stopLipSync(); // Close mouth
 
         setTimeout(() => {
             isSpeaking = false;
