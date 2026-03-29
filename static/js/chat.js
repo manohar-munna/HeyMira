@@ -88,6 +88,19 @@ function selectCustomOption(val, text) {
     });
 }
 
+// Expose to window
+window.toggleCustomDropdown = toggleCustomDropdown;
+window.selectCustomOption = selectCustomOption;
+window.showPersonaProfile = showPersonaProfile;
+window.closePersonaProfile = closePersonaProfile;
+window.remasterPersonaImage = remasterPersonaImage;
+window.deleteConversation = deleteConversation;
+window.newConversation = newConversation;
+window.selectConversation = selectConversation;
+window.sendMessage = sendMessage;
+window.endConversation = endConversation;
+window.logout = logout;
+
 // Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
     const container = document.getElementById('persona-custom-select');

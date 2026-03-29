@@ -352,6 +352,13 @@ function displayPersonaResult(persona) {
 
     result.style.display = 'block';
     result.scrollIntoView({ behavior: 'smooth' });
+
+    // Log Gemini detected coordinates if available
+    if (persona.lip_coords && persona.lip_coords.found) {
+        console.log(`%c [GEMINI-LIPS] Precision detection successful! coordinates stored: x:${persona.lip_coords.x}%, y:${persona.lip_coords.y}% `, 'background: #1e293b; color: #10b981; font-weight: bold;');
+    } else {
+        console.warn("[GEMINI-LIPS] Detection failed or not clear. Using default fallback coordinates.");
+    }
 }
 
 async function loadExistingPersonas() {

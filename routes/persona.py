@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from models.models import Persona
 from services.persona_service import extract_text_from_pdf, clean_whatsapp_export, extract_person_messages, extract_chat_participants, extract_person_messages_with_dates
-from services.ai_service import analyze_persona_from_text, generate_chat_summary
+from services.ai_service import analyze_persona_from_text, generate_chat_summary, detect_lip_coordinates
 from werkzeug.utils import secure_filename
 from flask import current_app
 import os
@@ -78,6 +78,7 @@ def upload_persona():
 
     # Handle optional persona image
     profile_image_url = None
+    lip_coords = {"x": 50, "y": 75, "found": False}
     if 'persona_image' in request.files:
         img_file = request.files['persona_image']
         if img_file and img_file.filename != '':
@@ -89,6 +90,12 @@ def upload_persona():
                 mime_type = f"image/{ext}" if ext in ['png', 'jpg', 'jpeg', 'gif', 'webp'] else 'image/jpeg'
                 base64_str = base64.b64encode(img_data).decode('utf-8')
                 profile_image_url = f"data:{mime_type};base64,{base64_str}"
+                
+                # Detect lips using Gemini
+                try:
+                    lip_coords = detect_lip_coordinates(profile_image_url)
+                except Exception as e:
+                    print(f"Async Lip Detection Error: {e}")
             else:
                 print("Warning: Image too large, skipping base64 encoding to avoid Firestore limits.")
 
@@ -108,7 +115,8 @@ def upload_persona():
         source_filename=file.filename,
         profile_image=profile_image_url,
         past_events=json.dumps(profile.get('past_events', [])),
-        raw_text=person_text_with_dates[:10000]
+        raw_text=person_text_with_dates[:10000],
+        lip_coords=json.dumps(lip_coords)
     )
     persona.save()
 

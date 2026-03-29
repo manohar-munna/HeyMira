@@ -123,6 +123,18 @@ function startVoiceCall() {
     
     if (activePersona && activePersona.profile_image) {
         avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">${mouthOverlay}`;
+        
+        // Apply custom coordinates if found by Gemini
+        if (activePersona.lip_coords && activePersona.lip_coords.found) {
+            const mouth = avatarEl.querySelector('.wa-mouth-overlay');
+            if (mouth) {
+                mouth.style.left = `${activePersona.lip_coords.x}%`;
+                mouth.style.top = `${activePersona.lip_coords.y}%`;
+                mouth.style.bottom = 'auto'; // Override bottom: 22%
+                mouth.style.transform = 'translate(-50%, -50%)';
+                console.log(`%c [LIPS-SYNC] Using Gemini coordinates: x:${activePersona.lip_coords.x}%, y:${activePersona.lip_coords.y}% `, 'background: #1e293b; color: #a855f7;');
+            }
+        }
     } else {
         avatarEl.innerHTML = `💜${mouthOverlay}`;
     }

@@ -181,3 +181,54 @@ Conversation text:
     except Exception as e:
         print(f"Chat Summary Error: {e}")
         return "Could not generate summary at this time."
+
+
+def detect_lip_coordinates(image_data_base64):
+    """Detect mouth coordinates (percentage x, y) using Gemini multimodal."""
+    prompt = """Analyze this portrait image and identify the exact center point of the person's lips/mouth.
+Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these fields:
+{
+    "x": percentage_from_left (0-100),
+    "y": percentage_from_top (0-100),
+    "found": true/false
+}
+Be precise. If lips are not clearly visible, set found to false."""
+
+    try:
+        # Prepare multimodal part
+        # image_data_base64 is like "data:image/jpeg;base64,..."
+        if ',' in image_data_base64:
+            mime_type = image_data_base64.split(';')[0].split(':')[1]
+            data = image_data_base64.split(',')[1]
+        else:
+            mime_type = "image/jpeg"
+            data = image_data_base64
+
+        response = key_manager.call_with_retry(
+            'gemini-1.5-flash', # Use 1.5 Flash for vision tasks
+            [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": mime_type, "data": data}}
+                    ]
+                }
+            ],
+            genai.types.GenerationConfig(
+                max_output_tokens=100,
+                temperature=0.1,
+            )
+        )
+        
+        response_text = response.text.strip()
+        if '```' in response_text:
+            response_text = response_text.split('```')[1]
+            if response_text.startswith('json'):
+                response_text = response_text[4:]
+        
+        return json.loads(response_text.strip())
+    except Exception as e:
+        print(f"Lip Detection Error: {e}")
+        return {"x": 50, "y": 75, "found": False}
+
