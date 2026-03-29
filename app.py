@@ -104,9 +104,15 @@ def profile_page():
     return render_template('profile.html')
 
 
+@app.route('/api/ping')
+def ping():
+    return jsonify({'status': 'ok'})
+
+
 # Create upload directory
 try:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 except Exception as e:
     print(f"Warning: Could not initialize upload folder: {e}")
 

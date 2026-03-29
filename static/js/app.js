@@ -127,5 +127,10 @@ function getMoodEmoji(score) {
     return '😢';
 }
 
+// Keep Vercel serverless function warm
+setInterval(() => {
+    fetch('/api/ping').catch(() => {});
+}, 30000); // 30 seconds
+
 // Initialize theme on every page
 document.addEventListener('DOMContentLoaded', loadTheme);

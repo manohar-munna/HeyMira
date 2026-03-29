@@ -71,7 +71,7 @@ function startVoiceCall() {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = navigator.language || 'en-US'; // Use browser's language for better accuracy
 
     let finalTranscript = '';
 
@@ -110,7 +110,7 @@ function startVoiceCall() {
                     try { recognition.abort(); } catch (e) { }
                     sendVoiceMessage(msg);
                 }
-            }, 100);
+            }, 800); // Increased timeout to 800ms to allow user to finish speaking
         }
     };
 
