@@ -185,14 +185,19 @@ Conversation text:
 
 def detect_lip_coordinates(image_data_base64):
     """Detect mouth coordinates (percentage x, y) using Gemini multimodal."""
-    prompt = """Analyze this portrait image and identify the exact center point of the person's lips/mouth.
-Return ONLY a valid JSON object (no markdown, no code blocks) with exactly these fields:
+    prompt = """Identify the exact center of the person's mouth (where the lips meet) in this portrait.
+Return ONLY a valid JSON object with:
 {
-    "x": percentage_from_left (0-100),
-    "y": percentage_from_top (0-100),
-    "found": true/false
+    "x": percentage_from_left_edge,
+    "y": percentage_from_top_edge,
+    "found": true
 }
-Be precise. If lips are not clearly visible, set found to false."""
+Important:
+- Use a scale of 0 to 100.
+- x=50 is the horizontal center.
+- y=50 is the vertical center.
+- For most portraits, lips are around y=65-80.
+- If no face or mouth is visible, return {"found": false, "x": 50, "y": 75}."""
 
     try:
         # Prepare multimodal part
