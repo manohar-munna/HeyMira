@@ -50,8 +50,11 @@
                     onclick="document.getElementById('persona-image-input').click()">
                     <div class="upload-icon">📸</div>
                     <p style="margin-bottom:8px;">Add a face to this personality</p>
-                    <img id="persona-image-preview" src=""
-                        style="display:none;width:120px;height:160px;object-fit:cover;border-radius:12px;margin:10px auto;border:2px solid var(--border); box-shadow: var(--shadow);">
+                    <div id="preview-wrapper" style="position:relative; display:none; width:120px; height:160px; margin:10px auto;">
+                        <img id="persona-image-preview" src=""
+                            style="width:100%; height:100%; object-fit:cover; border-radius:12px; border:2px solid var(--border); box-shadow: var(--shadow);">
+                        <div id="lip-marker" style="position:absolute; width:12px; height:12px; background:#ff6b6b; border:2px solid white; border-radius:50%; box-shadow:0 0 10px #ff6b6b; display:none; transform:translate(-50%, -50%); z-index:10;"></div>
+                    </div>
                 </div>
                 <input type="file" id="persona-image-input" name="persona_image" accept="image/*" style="display:none;"
                     onchange="previewPersonaImage(this)">

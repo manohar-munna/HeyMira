@@ -140,8 +140,12 @@ function resetUpload() {
     
     // Reset image preview
     const preview = document.getElementById('persona-image-preview');
-    preview.src = '';
-    preview.style.display = 'none';
+    const wrapper = document.getElementById('preview-wrapper');
+    const marker = document.getElementById('lip-marker');
+    
+    if (preview) preview.src = '';
+    if (wrapper) wrapper.style.display = 'none';
+    if (marker) marker.style.display = 'none';
     document.getElementById('persona-image-input').value = '';
     
     const uploadArea = document.getElementById('image-dropzone');
@@ -177,8 +181,12 @@ function previewPersonaImage(input) {
         const reader = new FileReader();
         reader.onload = function (e) {
             const preview = document.getElementById('persona-image-preview');
+            const wrapper = document.getElementById('preview-wrapper');
+            const marker = document.getElementById('lip-marker');
+            
             preview.src = e.target.result;
-            preview.style.display = 'block';
+            wrapper.style.display = 'block';
+            marker.style.display = 'none'; // Hide until server confirms
 
             // Log coordinates for reference as requested
             detectLips(e.target.result);
@@ -353,10 +361,15 @@ function displayPersonaResult(persona) {
     result.style.display = 'block';
     result.scrollIntoView({ behavior: 'smooth' });
 
-    // Log Gemini detected coordinates if available
-    if (persona.lip_coords && persona.lip_coords.found) {
+    // Highlight the detected area on the screen
+    const marker = document.getElementById('lip-marker');
+    if (marker && persona.lip_coords && persona.lip_coords.found) {
+        marker.style.left = `${persona.lip_coords.x}%`;
+        marker.style.top = `${persona.lip_coords.y}%`;
+        marker.style.display = 'block';
         console.log(`%c [GEMINI-LIPS] Precision detection successful! coordinates stored: x:${persona.lip_coords.x}%, y:${persona.lip_coords.y}% `, 'background: #1e293b; color: #10b981; font-weight: bold;');
-    } else {
+    } else if (marker) {
+        marker.style.display = 'none';
         console.warn("[GEMINI-LIPS] Detection failed or not clear. Using default fallback coordinates.");
     }
 }

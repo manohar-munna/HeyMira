@@ -19,14 +19,13 @@ function startLipSync() {
     const mouthPath = document.getElementById('wa-mouth-path');
     if (!mouthPath) return;
 
-    // Anatomically correct lip shapes (Bezier curves for upper and lower lips)
-    // Format: M (start) C (upper lip) C (lower lip) Z (close)
+    // High-Fidelity Lip Shapes (Cubic Bezier curves with Cupid's bow)
     const shapes = [
-        "M10,20 C15,18 45,18 50,20 C45,22 15,22 10,20 Z", // Closed / Natural
-        "M10,20 C15,5 45,5 50,20 C45,35 15,35 10,20 Z",   // Open (A/O)
-        "M10,20 C15,12 45,12 50,20 C45,28 15,28 10,20 Z", // Wide (E)
-        "M18,20 C22,10 38,10 42,20 C38,30 22,30 18,20 Z", // Pouted (U/W)
-        "M10,20 C15,14 45,14 50,20 C45,26 15,26 10,20 Z"  // Half-open
+        "M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z", // Closed / Neutral
+        "M10,20 C15,5 25,5 30,10 C35,5 45,5 50,20 C45,38 15,38 10,20 Z",   // Open (A/O)
+        "M10,20 C15,12 25,12 30,15 C35,12 45,12 50,20 C45,28 15,28 10,20 Z", // Wide (E)
+        "M20,20 C23,10 27,10 30,15 C33,10 37,10 40,20 C37,30 23,30 20,20 Z", // Pouted (U/W)
+        "M10,20 C15,14 25,14 30,17 C35,14 45,14 50,20 C45,30 15,30 10,20 Z"  // Half-open
     ];
 
     mouthInterval = setInterval(() => {
@@ -36,7 +35,7 @@ function startLipSync() {
         }
         const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
         mouthPath.setAttribute('d', randomShape);
-    }, 100); // Faster for better sync
+    }, 100); 
 }
 
 function stopLipSync() {
@@ -46,7 +45,7 @@ function stopLipSync() {
     }
     const mouthPath = document.getElementById('wa-mouth-path');
     if (mouthPath) {
-        mouthPath.setAttribute('d', "M10,20 C15,18 45,18 50,20 C45,22 15,22 10,20 Z"); // Reset to closed
+        mouthPath.setAttribute('d', "M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z"); // Reset to closed
     }
 }
 
@@ -119,7 +118,19 @@ function startVoiceCall() {
 
     // Set avatar image if available
     const avatarEl = document.getElementById('voice-avatar');
-    const mouthOverlay = `<div class="wa-mouth-overlay"><svg viewBox="0 0 60 40"><path id="wa-mouth-path" class="wa-mouth-path" d="M10,20 Q30,20 50,20" /></svg></div>`;
+    const mouthOverlay = `
+        <div class="wa-mouth-overlay">
+            <svg viewBox="0 0 60 40">
+                <defs>
+                    <linearGradient id="lip-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff8a95;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#ff5e6c;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#e63946;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path id="wa-mouth-path" class="wa-mouth-path" d="M10,20 C15,17 25,17 30,19 C35,17 45,17 50,20 C45,23 15,23 10,20 Z" />
+            </svg>
+        </div>`;
     
     if (activePersona && activePersona.profile_image) {
         avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">${mouthOverlay}`;
@@ -129,10 +140,12 @@ function startVoiceCall() {
             const mouth = avatarEl.querySelector('.wa-mouth-overlay');
             if (mouth) {
                 mouth.style.left = `${activePersona.lip_coords.x}%`;
-                mouth.style.top = `${activePersona.lip_coords.y}%`;
-                mouth.style.bottom = 'auto'; // Override bottom: 22%
+                // Apply a slight upward correction (-2%) as requested by user feedback
+                const correctedY = Math.max(0, activePersona.lip_coords.y - 2);
+                mouth.style.top = `${correctedY}%`;
+                mouth.style.bottom = 'auto'; 
                 mouth.style.transform = 'translate(-50%, -50%)';
-                console.log(`%c [LIPS-SYNC] Using Gemini coordinates: x:${activePersona.lip_coords.x}%, y:${activePersona.lip_coords.y}% `, 'background: #1e293b; color: #a855f7;');
+                console.log(`%c [LIPS-SYNC] Using Gemini coordinates: x:${activePersona.lip_coords.x}%, y:${correctedY}% (corrected) `, 'background: #1e293b; color: #a855f7;');
             }
         }
     } else {
