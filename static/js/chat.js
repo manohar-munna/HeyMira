@@ -345,18 +345,18 @@ async function sendMessage() {
 }
 
 async function endConversation() {
-    if (!confirm('End this conversation?')) return;
-
-    try {
-        const data = await apiCall(`/api/chat/end/${currentConversation.id}`, { method: 'POST' });
-        showToast('Chat ended.', 'success');
-        currentConversation = null;
-        document.getElementById('chat-active').style.display = 'none';
-        document.getElementById('chat-welcome').style.display = 'flex';
-        await loadConversations();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
+    showConfirm('End Chat?', 'Are you sure you want to end this conversation and save the report?', async () => {
+        try {
+            const data = await apiCall(`/api/chat/end/${currentConversation.id}`, { method: 'POST' });
+            showToast('Chat ended.', 'success');
+            currentConversation = null;
+            document.getElementById('chat-active').style.display = 'none';
+            document.getElementById('chat-welcome').style.display = 'flex';
+            await loadConversations();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
 }
 
 function sendVoiceMessage(text) {

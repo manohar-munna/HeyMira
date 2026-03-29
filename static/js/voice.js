@@ -10,13 +10,6 @@ let isMuted = false;
 let isSpeakerOff = false;
 let mouthInterval = null;
 
-// Expose to window immediately to fix potential ReferenceErrors in HTML onclick handlers
-window.toggleVoiceCall = function(v) { toggleVoiceCall(v); };
-window.toggleVideoInCall = function() { toggleVideoInCall(); };
-window.endVoiceCall = function() { endVoiceCall(); };
-window.toggleMute = function() { toggleMute(); };
-window.toggleSpeaker = function() { toggleSpeaker(); };
-
 // ═══════════════════════════════════════════
 //  LIP SYNC ENGINE
 // ═══════════════════════════════════════════
@@ -510,3 +503,10 @@ if (synthesis) {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(populateVoiceList, 500);
 });
+
+// Expose to window to fix ReferenceErrors in HTML onclick handlers
+window.toggleVoiceCall = toggleVoiceCall;
+window.toggleVideoInCall = toggleVideoInCall;
+window.endVoiceCall = endVoiceCall;
+window.toggleMute = toggleMute;
+window.toggleSpeaker = toggleSpeaker;
