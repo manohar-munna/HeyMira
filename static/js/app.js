@@ -79,7 +79,24 @@ async function logout() {
 // Format date — shows REAL actual time (local timezone)
 function formatDate(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr + (dateStr.endsWith('Z') ? '' : 'Z')); // Ensure UTC parsing
+    
+    // Fix for potential "Invalid Date"
+    let date;
+    try {
+        // Ensure string and handle potential Z suffix
+        const cleanStr = String(dateStr);
+        date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
+        
+        // Final fallback if parsing failed
+        if (isNaN(date.getTime())) {
+            date = new Date(cleanStr);
+        }
+    } catch (e) {
+        return '';
+    }
+
+    if (isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diff = now - date;
 
@@ -108,8 +125,14 @@ function formatDate(dateStr) {
 // Format time only (for chat messages)
 function formatTime(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr + (dateStr.endsWith('Z') ? '' : 'Z'));
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    try {
+        const cleanStr = String(dateStr);
+        const date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch (e) {
+        return '';
+    }
 }
 
 // Get current real time string

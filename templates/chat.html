@@ -82,14 +82,19 @@
         <!-- Active chat (hidden initially) -->
         <div id="chat-active" style="display:none;flex:1;display:none;flex-direction:column;height:100vh;">
             <div class="chat-header">
-                <div class="chat-header-left">
-                    <h3 id="chat-title">New Conversation</h3>
-                    <span class="persona-name" id="chat-persona"></span>
+                <div class="chat-header-left" style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="showPersonaProfile()">
+                    <div class="msg-avatar" id="header-avatar" style="width:40px; height:40px; background:var(--accent-gradient);">💜</div>
+                    <div style="display:flex; flex-direction:column;">
+                        <h3 id="chat-title" style="margin:0; font-size:1rem;">New Conversation</h3>
+                        <span class="persona-name" id="chat-persona" style="font-size:0.75rem; opacity:0.8;">Online</span>
+                    </div>
                 </div>
                 <div class="chat-header-right">
-                    <button class="btn btn-icon btn-secondary voice-btn" id="voice-btn" onclick="toggleVoiceCall()"
-                        title="Voice Call">
-                        🎤
+                    <button class="btn btn-icon btn-secondary" onclick="toggleVoiceCall(true)" title="Video Call">
+                        📹
+                    </button>
+                    <button class="btn btn-icon btn-secondary voice-btn" id="voice-btn" onclick="toggleVoiceCall(false)" title="Voice Call">
+                        📞
                     </button>
                     <button class="btn btn-icon btn-secondary" onclick="if(currentConversation) deleteConversation(currentConversation.id)" title="Delete Chat">
                         🗑️
@@ -158,6 +163,10 @@
 
     <!-- Call controls -->
     <div class="wa-call-controls">
+        <button class="wa-ctrl-btn" id="wa-video-btn" onclick="toggleVideoInCall()" title="Toggle Video">
+            <span class="wa-ctrl-icon">📹</span>
+            <span class="wa-ctrl-label">Video</span>
+        </button>
         <button class="wa-ctrl-btn" id="wa-mute-btn" onclick="toggleMute()" title="Mute Microphone">
             <span class="wa-ctrl-icon">🎤</span>
             <span class="wa-ctrl-label">Mute</span>
@@ -169,6 +178,27 @@
             <span class="wa-ctrl-icon">🔊</span>
             <span class="wa-ctrl-label">Speaker</span>
         </button>
+    </div>
+</div>
+
+<!-- Persona Profile Modal -->
+<div class="modal-overlay" id="persona-profile-modal">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h2 id="profile-persona-name">Persona Profile</h2>
+            <button class="modal-close" onclick="closePersonaProfile()">✕</button>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+            <div id="profile-persona-avatar" style="width:120px; height:120px; border-radius:50%; overflow:hidden; background:var(--accent-gradient);"></div>
+            <div style="text-align:center;">
+                <p id="profile-persona-meta" style="color:var(--text-secondary); margin-bottom:10px;"></p>
+                <div id="remaster-option" style="display:none;">
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Image quality might be low for video calls.</p>
+                    <button class="btn btn-primary btn-sm" onclick="remasterPersonaImage()">✨ Remaster AI Avatar</button>
+                </div>
+            </div>
+            <div id="persona-traits-display" style="width:100%; display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+        </div>
     </div>
 </div>
 

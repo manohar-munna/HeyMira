@@ -4,6 +4,7 @@ let currentConversation = null;
 let currentUser = null;
 let conversations = [];
 let personaCache = {}; // Cache personas to avoid repeated API calls
+let activePersona = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadUser();
@@ -55,12 +56,10 @@ async function loadPersonas() {
 async function loadConversations() {
     try {
         const data = await apiCall('/api/chat/conversations');
-        conversations = data.conversations;
+        conversations = (data.conversations || []).filter(c => c && c.id);
         renderConversationList();
     } catch (e) { }
 }
-
-// --- Connection Requests and SSE removed for new companion theme ---
 
 function renderConversationList() {
     const list = document.getElementById('conversation-list');
@@ -77,9 +76,9 @@ function renderConversationList() {
                 <button class="btn-icon btn-sm" style="width:24px; height:24px; font-size:0.8rem; background:transparent; border:none; color:var(--danger);" onclick="event.stopPropagation(); deleteConversation(${c.id})" title="Delete Chat">🗑️</button>
             </div>
             <div class="conv-meta" style="margin-top:4px;">
-                <span>${formatDate(c.started_at)}</span>
+                <span>${formatDate(c.started_at) || 'Recent'}</span>
                 <span>•</span>
-                <span>${c.message_count} msgs</span>
+                <span>${c.message_count || 0} msgs</span>
             </div>
         </div>
     `).join('');
@@ -115,8 +114,8 @@ async function newConversation() {
         renderMessages([]);
 
         // Show welcome AI message
-        const persona = personaId ? document.getElementById('persona-select').selectedOptions[0].textContent : 'HeyMira';
-        addMessageToUI('ai', `Hey! 😊 I'm ${persona.split(' — ')[0]}. How are you feeling today? I'm here to listen and chat whenever you need someone.`);
+        const personaText = personaId ? document.getElementById('persona-select').selectedOptions[0].textContent : 'HeyMira';
+        addMessageToUI('ai', `Hey! 😊 I'm ${personaText.split(' — ')[0]}. How are you feeling today? I'm here to listen and chat whenever you need someone.`);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -142,16 +141,78 @@ function showChatUI() {
     document.getElementById('chat-title').textContent = currentConversation.title || 'New Conversation';
 
     const personaEl = document.getElementById('chat-persona');
+    const headerAvatar = document.getElementById('header-avatar');
+
     if (currentConversation.persona_id) {
-        const opt = document.querySelector(`#persona-select option[value="${currentConversation.persona_id}"]`);
-        personaEl.textContent = opt ? `Speaking as ${opt.textContent.split(' — ')[0]}` : '';
-        // Background fetch persona details to render image
-        if (!activePersona || activePersona.id !== currentConversation.persona_id) {
-            fetchPersonaDetails(currentConversation.persona_id);
-        }
+        personaEl.textContent = 'Online';
+        fetchPersonaDetails(currentConversation.persona_id).then(persona => {
+            if (persona && persona.profile_image) {
+                headerAvatar.innerHTML = `<img src="${persona.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                headerAvatar.textContent = persona ? persona.name[0].toUpperCase() : '💜';
+                headerAvatar.style.background = 'var(--accent-gradient)';
+            }
+        });
     } else {
-        personaEl.textContent = '';
+        personaEl.textContent = 'HeyMira AI';
+        headerAvatar.innerHTML = '💜';
+        headerAvatar.style.background = 'var(--accent-gradient)';
         activePersona = null;
+    }
+}
+
+function showPersonaProfile() {
+    if (!activePersona) return;
+    const modal = document.getElementById('persona-profile-modal');
+    document.getElementById('profile-persona-name').textContent = activePersona.name;
+    document.getElementById('profile-persona-meta').textContent = `${activePersona.tone} · ${activePersona.speaking_style}`;
+    
+    const avatar = document.getElementById('profile-persona-avatar');
+    if (activePersona.profile_image) {
+        avatar.innerHTML = `<img src="${activePersona.profile_image}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    } else {
+        avatar.innerHTML = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:white;">${activePersona.name[0]}</div>`;
+    }
+
+    const traits = typeof activePersona.personality_traits === 'string' ? JSON.parse(activePersona.personality_traits || '{}') : activePersona.personality_traits;
+    const traitDisplay = document.getElementById('persona-traits-display');
+    traitDisplay.innerHTML = Object.entries(traits).map(([k, v]) => `
+        <div class="trait-item" style="padding:10px; background:var(--bg-input); border-radius:8px;">
+            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${k}</div>
+            <div style="font-size:0.9rem; font-weight:600; color:var(--accent);">${v}/10</div>
+        </div>
+    `).join('');
+
+    document.getElementById('remaster-option').style.display = 'block';
+    modal.classList.add('active');
+}
+
+function closePersonaProfile() {
+    document.getElementById('persona-profile-modal').classList.remove('active');
+}
+
+async function remasterPersonaImage() {
+    if (!activePersona) return;
+    showToast('Remastering AI Avatar...', 'success');
+    setTimeout(() => {
+        showToast('Remastering requires AI Generation integration. This is a placeholder.', 'warning');
+    }, 2000);
+}
+
+async function fetchPersonaDetails(personaId) {
+    if (!personaId) return null;
+    if (personaCache[personaId]) {
+        activePersona = personaCache[personaId];
+        return activePersona;
+    }
+    try {
+        const res = await apiCall(`/api/persona/${personaId}`);
+        activePersona = res.persona;
+        personaCache[personaId] = activePersona;
+        return activePersona;
+    } catch (e) {
+        activePersona = null;
+        return null;
     }
 }
 
@@ -164,28 +225,8 @@ function renderMessages(messages) {
     scrollToBottom();
 }
 
-let activePersona = null;
-async function fetchPersonaDetails(personaId) {
-    if (!personaId) return;
-    
-    // Check cache first (improves speed dramatically)
-    if (personaCache[personaId]) {
-        activePersona = personaCache[personaId];
-        return;
-    }
-
-    try {
-        const res = await apiCall(`/api/persona/${personaId}`);
-        activePersona = res.persona;
-        personaCache[personaId] = activePersona; // Store in cache
-    } catch (e) {
-        activePersona = null;
-    }
-}
-
 function addMessageToUI(role, content, timestamp = null, isVoice = false) {
     const area = document.getElementById('messages-area');
-    // Use formatTime for chat message timestamps (shows actual clock time)
     const time = timestamp ? formatTime(timestamp) : getCurrentTime();
 
     let aiAvatar = '💜';
@@ -218,7 +259,6 @@ async function sendMessage() {
     input.value = '';
     addMessageToUI('user', content);
 
-    // Show typing indicator
     const typing = document.getElementById('typing-indicator');
     typing.classList.add('visible');
     scrollToBottom();
@@ -236,8 +276,7 @@ async function sendMessage() {
         typing.classList.remove('visible');
         addMessageToUI('ai', data.ai_message.content);
 
-        // Update conversation in list only if it's the first exchange
-        if (!currentConversation.title || currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation' || currentConversation.message_count <= 2) {
+        if (!currentConversation.title || currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation' || (currentConversation.message_count || 0) <= 2) {
             currentConversation.title = data.user_message.content.substring(0, 80);
             document.getElementById('chat-title').textContent = currentConversation.title;
         }
@@ -266,7 +305,6 @@ async function endConversation() {
     }
 }
 
-// Send message from voice
 function sendVoiceMessage(text) {
     if (!text || !currentConversation) return;
 
@@ -286,7 +324,6 @@ function sendVoiceMessage(text) {
         typing.classList.remove('visible');
         addMessageToUI('ai', data.ai_message.content, null, true);
 
-        // Speak the AI response
         if (typeof speakResponse === 'function') {
             speakResponse(data.ai_message.content);
         }

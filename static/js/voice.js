@@ -50,15 +50,39 @@ function stopLipSync() {
     }
 }
 
+let isVideoEnabled = false;
+
 // ═══════════════════════════════════════════
 //  TOGGLE / START / END
 // ═══════════════════════════════════════════
 
-function toggleVoiceCall() {
+function toggleVoiceCall(video = false) {
     if (isVoiceActive) {
         endVoiceCall();
     } else {
+        isVideoEnabled = video;
         startVoiceCall();
+    }
+}
+
+function toggleVideoInCall() {
+    if (!isVoiceActive) return;
+    isVideoEnabled = !isVideoEnabled;
+    updateCallUISettings();
+}
+
+function updateCallUISettings() {
+    const avatarContainer = document.querySelector('.wa-avatar-container');
+    const videoBtn = document.getElementById('wa-video-btn');
+    
+    if (isVideoEnabled) {
+        avatarContainer.classList.add('video-mode');
+        videoBtn.classList.remove('muted');
+        videoBtn.querySelector('.wa-ctrl-icon').textContent = '📹';
+    } else {
+        avatarContainer.classList.remove('video-mode');
+        videoBtn.classList.add('muted');
+        videoBtn.querySelector('.wa-ctrl-icon').textContent = '📵';
     }
 }
 
@@ -84,7 +108,9 @@ function startVoiceCall() {
     const personaSelect = document.getElementById('persona-select');
     const selectedOption = personaSelect ? personaSelect.selectedOptions[0] : null;
     let personaName = 'Mira';
-    if (selectedOption && selectedOption.value) {
+    if (activePersona) {
+        personaName = activePersona.name;
+    } else if (selectedOption && selectedOption.value) {
         personaName = selectedOption.textContent.split(' — ')[0];
     }
     document.getElementById('wa-call-name').textContent = personaName;
@@ -93,11 +119,14 @@ function startVoiceCall() {
     const avatarEl = document.getElementById('voice-avatar');
     const mouthOverlay = `<div class="wa-mouth-overlay"><svg viewBox="0 0 60 40"><path id="wa-mouth-path" class="wa-mouth-path" d="M10,20 Q30,20 50,20" /></svg></div>`;
     
-    if (typeof activePersona !== 'undefined' && activePersona && activePersona.profile_image) {
+    if (activePersona && activePersona.profile_image) {
         avatarEl.innerHTML = `<img src="${activePersona.profile_image}" alt="${personaName}">${mouthOverlay}`;
     } else {
         avatarEl.innerHTML = `💜${mouthOverlay}`;
     }
+
+    // Update UI for video/voice
+    updateCallUISettings();
 
     // Reset UI
     setCallStatus('calling');
