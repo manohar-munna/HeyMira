@@ -83,13 +83,16 @@ function formatDate(dateStr) {
     // Fix for potential "Invalid Date"
     let date;
     try {
-        // Ensure string and handle potential Z suffix
-        const cleanStr = String(dateStr);
-        date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
-        
-        // Final fallback if parsing failed
-        if (isNaN(date.getTime())) {
-            date = new Date(cleanStr);
+        // Handle Firebase Timestamp objects {seconds, nanoseconds}
+        if (typeof dateStr === 'object' && dateStr.seconds) {
+            date = new Date(dateStr.seconds * 1000);
+        } else {
+            const cleanStr = String(dateStr);
+            date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
+            
+            if (isNaN(date.getTime())) {
+                date = new Date(cleanStr);
+            }
         }
     } catch (e) {
         return '';
@@ -126,8 +129,16 @@ function formatDate(dateStr) {
 function formatTime(dateStr) {
     if (!dateStr) return '';
     try {
-        const cleanStr = String(dateStr);
-        const date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
+        let date;
+        if (typeof dateStr === 'object' && dateStr.seconds) {
+            date = new Date(dateStr.seconds * 1000);
+        } else {
+            const cleanStr = String(dateStr);
+            date = new Date(cleanStr.endsWith('Z') ? cleanStr : cleanStr + 'Z');
+            if (isNaN(date.getTime())) {
+                date = new Date(cleanStr);
+            }
+        }
         if (isNaN(date.getTime())) return '';
         return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (e) {
@@ -164,6 +175,36 @@ function getMoodEmoji(score) {
 setInterval(() => {
     fetch('/api/ping').catch(() => {});
 }, 30000); // 30 seconds
+
+// Custom Confirmation
+function showConfirm(title, message, onConfirm) {
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) {
+        if (confirm(message)) onConfirm();
+        return;
+    }
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    
+    const okBtn = document.getElementById('confirm-ok-btn');
+    const cancelBtn = document.getElementById('confirm-cancel-btn');
+    
+    // Clear old listeners
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    
+    newOk.onclick = () => {
+        modal.classList.remove('active');
+        onConfirm();
+    };
+    newCancel.onclick = () => {
+        modal.classList.remove('active');
+    };
+    
+    modal.classList.add('active');
+}
 
 // Initialize theme on every page
 document.addEventListener('DOMContentLoaded', loadTheme);

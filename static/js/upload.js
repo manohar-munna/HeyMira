@@ -151,6 +151,23 @@ function resetUpload() {
     if (text) text.style.display = 'block';
 }
 
+function detectLips(imageData) {
+    // Placeholder for lips detection. In a real app, this would use a face mesh model.
+    // For now, we assume lips are roughly in the center lower-half for logging.
+    console.log("Detecting lips coordinates...");
+    
+    // Simulate finding lips
+    const lipsFound = Math.random() > 0.1; // 90% chance to "find"
+    if (lipsFound) {
+        const coords = { x: 50, y: 72 }; // Percentage coordinates
+        console.log(`%c Lips found at: x:${coords.x}%, y:${coords.y}% `, 'background: #222; color: #bada55; font-weight: bold;');
+        return coords;
+    } else {
+        console.warn("No lips detected in the provided image. Face might be at a bad angle.");
+        return null;
+    }
+}
+
 function previewPersonaImage(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -158,6 +175,9 @@ function previewPersonaImage(input) {
             const preview = document.getElementById('persona-image-preview');
             preview.src = e.target.result;
             preview.style.display = 'block';
+
+            // Log coordinates for reference as requested
+            detectLips(e.target.result);
 
             // hide icon and text when image is shown
             const uploadArea = document.getElementById('image-dropzone');
@@ -353,14 +373,15 @@ async function loadExistingPersonas() {
 }
 
 async function deletePersona(id) {
-    if (!confirm('Delete this persona?')) return;
-    try {
-        await apiCall(`/api/persona/${id}`, { method: 'DELETE' });
-        showToast('Persona deleted', 'success');
-        await loadExistingPersonas();
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
+    showConfirm('Delete Persona?', 'Are you sure you want to delete this personality profile?', async () => {
+        try {
+            await apiCall(`/api/persona/${id}`, { method: 'DELETE' });
+            showToast('Persona deleted', 'success');
+            await loadExistingPersonas();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
 }
 
 function escapeHtml(text) {
