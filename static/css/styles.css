@@ -1153,13 +1153,19 @@ select.form-input {
     width: 100%;
     height: 100%;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
 }
 
 .wa-avatar-container.video-mode .wa-avatar {
-    width: 100%;
-    height: 100%;
+    width: 280px;
+    height: 380px;
     border-radius: 24px;
-    box-shadow: none;
+    box-shadow: 0 0 80px var(--accent-glow);
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
 }
 
 .wa-avatar-container.video-mode .wa-ripple {
@@ -1174,10 +1180,20 @@ select.form-input {
 
 .wa-avatar-container.video-mode .wa-mouth-path {
     stroke-width: 4;
+    stroke: #ffffff;
 }
 
 .wa-avatar.is-speaking-pulse {
-    animation: avatar-speak-pulse 0.2s ease-in-out infinite alternate;
+    animation: avatar-speak-glow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes avatar-speak-glow {
+    from {
+        box-shadow: 0 0 50px var(--accent-glow);
+    }
+    to {
+        box-shadow: 0 0 100px var(--accent-glow);
+    }
 }
 
 /* Ensure images fit avatars */
@@ -1208,20 +1224,18 @@ select.form-input {
 
 .wa-mouth-path {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.85);
+    stroke: #ffffff;
     stroke-width: 3;
     stroke-linecap: round;
     transition: d 0.1s ease-in-out;
 }
 
-@keyframes avatar-speak-pulse {
+@keyframes avatar-speak-glow {
     from {
-        transform: scale(1);
-        box-shadow: 0 0 50px var(--accent-glow), 0 0 100px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 50px var(--accent-glow);
     }
     to {
-        transform: scale(1.08);
-        box-shadow: 0 0 80px var(--accent-glow), 0 0 140px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 100px var(--accent-glow);
     }
 }
 
