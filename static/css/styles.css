@@ -1196,26 +1196,45 @@ select.form-input {
     }
 }
 
-/* Ensure images fit avatars */
-.msg-avatar img, .user-avatar img, .wa-avatar img {
+/* Ensure images fit avatars - with specific handling for video mode */
+.msg-avatar img, .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.wa-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: border-radius 0.5s ease;
 }
 
-/* Vector Lip-Sync Styles */
+/* Voice mode (Circular) */
+.wa-avatar:not(.video-mode-avatar) img {
+    border-radius: 50%;
+}
+
+/* Video mode (Rectangular) */
+.wa-avatar-container.video-mode .wa-avatar img {
+    border-radius: 20px;
+}
+
+/* Vector Lip-Sync Styles - More Realistic Lips */
 .wa-mouth-overlay {
     position: absolute;
-    bottom: 20%;
+    bottom: 22%;
     left: 50%;
     transform: translateX(-50%);
-    width: 50px;
-    height: 30px;
+    width: 60px;
+    height: 40px;
     display: none;
     z-index: 5;
     pointer-events: none;
-    filter: drop-shadow(0 0 8px var(--accent-glow));
+    filter: drop-shadow(0 0 10px rgba(255, 71, 87, 0.4));
 }
 
 .wa-avatar.is-speaking-pulse .wa-mouth-overlay {
@@ -1223,28 +1242,79 @@ select.form-input {
 }
 
 .wa-mouth-path {
-    fill: none;
+    fill: #ff6b6b; /* Lip color */
     stroke: #ffffff;
-    stroke-width: 3;
-    stroke-linecap: round;
-    transition: d 0.1s ease-in-out;
+    stroke-width: 0.5;
+    transition: d 0.12s ease-in-out;
 }
 
-@keyframes avatar-speak-glow {
-    from {
-        box-shadow: 0 0 50px var(--accent-glow);
-    }
-    to {
-        box-shadow: 0 0 100px var(--accent-glow);
-    }
-}
-
-.wa-avatar img {
+/* Persona Selection - Custom Dropdown Vibe */
+.custom-select-container {
+    position: relative;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
 }
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.custom-select-trigger:hover {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.custom-options {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: none;
+    z-index: 100;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.custom-options.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.custom-option {
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.custom-option:hover {
+    background: var(--accent-gradient);
+    color: white;
+}
+
+.custom-option.selected {
+    background: rgba(168, 85, 247, 0.2);
+    border: 1px solid var(--accent);
+}
+
+.custom-option .opt-name { font-weight: 600; }
+.custom-option .opt-tone { font-size: 0.75rem; opacity: 0.7; }
 
 /* --- Transcripts --- */
 .wa-transcript-area {

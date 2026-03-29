@@ -28,7 +28,17 @@
 
         <!-- Persona selector -->
         <div style="padding: 0 20px 12px;">
-            <select class="form-input" id="persona-select" style="font-size:0.85rem;padding:8px 12px;">
+            <div class="custom-select-container" id="persona-custom-select">
+                <div class="custom-select-trigger" onclick="toggleCustomDropdown()">
+                    <span id="selected-persona-text">No persona (default AI)</span>
+                    <span style="font-size:0.7rem; opacity:0.6;">▼</span>
+                </div>
+                <div class="custom-options" id="custom-options-list">
+                    <!-- Custom options will be populated by JS -->
+                </div>
+            </div>
+            <!-- Hidden original select for backend compatibility -->
+            <select id="persona-select" style="display:none;">
                 <option value="">No persona (default AI)</option>
             </select>
         </div>

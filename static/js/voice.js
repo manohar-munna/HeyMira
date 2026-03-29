@@ -19,13 +19,14 @@ function startLipSync() {
     const mouthPath = document.getElementById('wa-mouth-path');
     if (!mouthPath) return;
 
-    // Different mouth shapes (Phonemes)
+    // Anatomically correct lip shapes (Bezier curves for upper and lower lips)
+    // Format: M (start) C (upper lip) C (lower lip) Z (close)
     const shapes = [
-        "M10,20 Q30,20 50,20", // Closed
-        "M10,20 Q30,40 50,20", // Open (A/O)
-        "M10,20 Q30,25 50,20", // Wide (E)
-        "M15,20 Q30,35 45,20", // Narrow (U/W)
-        "M10,20 Q30,30 50,20"  // Half-open
+        "M10,20 C15,18 45,18 50,20 C45,22 15,22 10,20 Z", // Closed / Natural
+        "M10,20 C15,5 45,5 50,20 C45,35 15,35 10,20 Z",   // Open (A/O)
+        "M10,20 C15,12 45,12 50,20 C45,28 15,28 10,20 Z", // Wide (E)
+        "M18,20 C22,10 38,10 42,20 C38,30 22,30 18,20 Z", // Pouted (U/W)
+        "M10,20 C15,14 45,14 50,20 C45,26 15,26 10,20 Z"  // Half-open
     ];
 
     mouthInterval = setInterval(() => {
@@ -33,10 +34,9 @@ function startLipSync() {
             stopLipSync();
             return;
         }
-        // Pick a random shape from the phoneme list
         const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
         mouthPath.setAttribute('d', randomShape);
-    }, 120); // Sync speed
+    }, 100); // Faster for better sync
 }
 
 function stopLipSync() {
@@ -46,7 +46,7 @@ function stopLipSync() {
     }
     const mouthPath = document.getElementById('wa-mouth-path');
     if (mouthPath) {
-        mouthPath.setAttribute('d', "M10,20 Q30,20 50,20"); // Reset to closed
+        mouthPath.setAttribute('d', "M10,20 C15,18 45,18 50,20 C45,22 15,22 10,20 Z"); // Reset to closed
     }
 }
 

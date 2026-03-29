@@ -38,22 +38,66 @@ async function loadUser() {
         window.location.href = '/login';
     }
 }
-
 async function loadPersonas() {
     try {
         const data = await apiCall('/api/persona/list');
         const select = document.getElementById('persona-select');
+        const customList = document.getElementById('custom-options-list');
+
+        // Reset
         select.innerHTML = '<option value="">No persona (default AI)</option>';
+        customList.innerHTML = `<div class="custom-option selected" onclick="selectCustomOption('', 'No persona (default AI)')">
+                                    <span class="opt-name">No persona (default AI)</span>
+                                </div>`;
+
         data.personas.forEach(p => {
+            // Hidden select for backend compatibility
             const opt = document.createElement('option');
             opt.value = p.id;
             opt.textContent = `${p.name} — ${p.tone}`;
             select.appendChild(opt);
+
+            // Custom UI
+            const customOpt = document.createElement('div');
+            customOpt.className = 'custom-option';
+            customOpt.onclick = () => selectCustomOption(p.id, `${p.name} — ${p.tone}`);
+            customOpt.innerHTML = `
+                <span class="opt-name">${escapeHtml(p.name)}</span>
+                <span class="opt-tone">${escapeHtml(p.tone)} · ${escapeHtml(p.speaking_style)}</span>
+            `;
+            customList.appendChild(customOpt);
         });
     } catch (e) { }
 }
 
+function toggleCustomDropdown() {
+    const list = document.getElementById('custom-options-list');
+    list.classList.toggle('active');
+}
+
+function selectCustomOption(val, text) {
+    document.getElementById('persona-select').value = val;
+    document.getElementById('selected-persona-text').textContent = text;
+    document.getElementById('custom-options-list').classList.remove('active');
+
+    // Update selected visual state using data attribute or matching ID
+    document.querySelectorAll('.custom-option').forEach(opt => {
+        const isSelected = (val === '' && opt.textContent.includes('No persona')) || 
+                           (val !== '' && opt.getAttribute('onclick') && opt.getAttribute('onclick').includes(`'${val}'`));
+        opt.classList.toggle('selected', isSelected);
+    });
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('persona-custom-select');
+    if (container && !container.contains(e.target)) {
+        document.getElementById('custom-options-list').classList.remove('active');
+    }
+});
+
 async function loadConversations() {
+...
     try {
         const data = await apiCall('/api/chat/conversations');
         conversations = (data.conversations || []).filter(c => c && c.id);
