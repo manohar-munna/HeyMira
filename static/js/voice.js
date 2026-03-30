@@ -79,6 +79,56 @@ function stopLipSync() {
 }
 
 let isVideoEnabled = false;
+let callMode = '2d'; // '2d' or '3d'
+
+function setCallMode(mode) {
+    if (callMode === mode) return;
+    
+    // If a call is active, we might need to restart it or switch views
+    // For now, let's just update the UI
+    callMode = mode;
+    
+    const btn2d = document.getElementById('mode-2d');
+    const btn3d = document.getElementById('mode-3d');
+    
+    if (mode === '3d') {
+        btn3d.style.background = 'var(--accent-gradient)';
+        btn3d.style.color = 'white';
+        btn2d.style.background = 'transparent';
+        btn2d.style.color = 'rgba(255,255,255,0.6)';
+        
+        // Show 3D container, hide 2D avatar
+        document.getElementById('avatar-3d-container').style.display = 'block';
+        document.querySelector('.wa-avatar-container').style.display = 'none';
+        
+        // If call is active, we need to switch from Web Speech to Gemini Live
+        if (isVoiceActive) {
+            // This will be handled in startVoiceCall or via a switch function
+            console.log("Switching to 3D mode in-call...");
+            // For simplicity, let's restart the call if it's already active
+            const wasVideo = isVideoEnabled;
+            endVoiceCall();
+            toggleVoiceCall(wasVideo);
+        }
+    } else {
+        btn2d.style.background = 'var(--accent-gradient)';
+        btn2d.style.color = 'white';
+        btn3d.style.background = 'transparent';
+        btn3d.style.color = 'rgba(255,255,255,0.6)';
+        
+        // Hide 3D container, show 2D avatar
+        document.getElementById('avatar-3d-container').style.display = 'none';
+        document.querySelector('.wa-avatar-container').style.display = 'flex';
+        
+        if (isVoiceActive) {
+            console.log("Switching to 2D mode in-call...");
+            const wasVideo = isVideoEnabled;
+            endVoiceCall();
+            toggleVoiceCall(wasVideo);
+        }
+    }
+}
+window.setCallMode = setCallMode;
 
 // ═══════════════════════════════════════════
 //  TOGGLE / START / END
@@ -117,12 +167,6 @@ function updateCallUISettings() {
 }
 
 function startVoiceCall() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        showToast('Voice calls require Chrome or Edge browser', 'error');
-        return;
-    }
-
     if (!currentConversation) {
         showToast('Start a conversation first', 'error');
         return;
@@ -133,6 +177,32 @@ function startVoiceCall() {
     isSpeakerOff = false;
     isSpeaking = false;
     isThinking = false;
+
+    // --- 3D Mode Initialization ---
+    if (callMode === '3d') {
+        const apiKey = localStorage.getItem('geminiApiKey') || '';
+        if (window.start3DCall) {
+            window.start3DCall(apiKey);
+            setCallStatus('listening');
+            
+            // Populate call screen identity
+            const personaName = activePersona ? activePersona.name : 'Mira';
+            document.getElementById('wa-call-name').textContent = personaName;
+            
+            document.getElementById('wa-user-text').textContent = "Speak naturally — I'm here for you";
+            document.getElementById('wa-ai-text').textContent = 'Connected (3D Mode)';
+            document.getElementById('voice-overlay').classList.add('active');
+            document.getElementById('voice-btn').classList.add('active');
+            return;
+        }
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        showToast('Voice calls require Chrome or Edge browser', 'error');
+        isVoiceActive = false;
+        return;
+    }
 
     // --- Populate call screen identity ---
     const personaSelect = document.getElementById('persona-select');
@@ -310,6 +380,10 @@ function endVoiceCall() {
     isThinking = false;
     isMuted = false;
     isSpeakerOff = false;
+
+    if (callMode === '3d' && window.end3DCall) {
+        window.end3DCall();
+    }
 
     if (recognition) {
         try { recognition.stop(); } catch (e) { }

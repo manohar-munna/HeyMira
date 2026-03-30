@@ -7,3 +7,5 @@ PyPDF2==3.0.1
 python-dotenv==1.1.0
 openai>=1.0.0
 firebase-admin>=6.4.0
+websockets>=14.0
+certifi>=2024.0

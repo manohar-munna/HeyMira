@@ -41,11 +41,15 @@ from routes.auth import auth_bp
 from routes.chat import chat_bp
 from routes.persona import persona_bp
 from routes.profile import profile_bp
+from gemini_live_proxy import start_proxy
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(persona_bp)
 app.register_blueprint(profile_bp)
+
+# Start WebSocket Proxy for 3D Mode
+start_proxy(port=5001, default_api_key=app.config.get('GEMINI_API_KEY'))
 
 
 # Page routes

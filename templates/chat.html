@@ -143,6 +143,13 @@
                 <option value="">Loading voices...</option>
             </select>
         </div>
+        <!-- 2D/3D Toggle -->
+        <div class="wa-mode-toggle" style="display: flex; justify-content: center; margin-top: 10px;">
+            <div style="background: rgba(255,255,255,0.1); border-radius: 20px; padding: 2px; display: flex; border: 1px solid rgba(255,255,255,0.1);">
+                <button class="mode-btn active" id="mode-2d" onclick="setCallMode('2d')" style="padding: 4px 16px; border-radius: 18px; border: none; background: var(--accent-gradient); color: white; font-size: 0.75rem; font-weight: 700; cursor: pointer;">2D</button>
+                <button class="mode-btn" id="mode-3d" onclick="setCallMode('3d')" style="padding: 4px 16px; border-radius: 18px; border: none; background: transparent; color: rgba(255,255,255,0.6); font-size: 0.75rem; font-weight: 700; cursor: pointer;">3D</button>
+            </div>
+        </div>
     </div>
 
     <!-- Persona identity -->
@@ -150,6 +157,9 @@
         <div class="wa-call-name" id="wa-call-name">Mira</div>
         <div class="wa-call-status" id="voice-status">Calling...</div>
     </div>
+
+    <!-- 3D Avatar Container -->
+    <div id="avatar-3d-container" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:1;"></div>
 
     <!-- Avatar with ripple rings -->
     <div class="wa-avatar-container">
@@ -215,6 +225,16 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "talkinghead": "{{ url_for('static', filename='js/talkinghead_local.js') }}"
+  }
+}
+</script>
 <script src="{{ url_for('static', filename='js/chat.js') }}?v=1.1"></script>
 <script src="{{ url_for('static', filename='js/voice.js') }}?v=1.1"></script>
+<script type="module" src="{{ url_for('static', filename='js/voice-3d.js') }}"></script>
 {% endblock %}
