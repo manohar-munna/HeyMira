@@ -73,13 +73,31 @@ export async function start3DCall(apiKey) {
 }
 
 async function startLiveSession(apiKey) {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Backend proxy runs on 5001
-    const WS_URL = `${protocol}//${window.location.hostname}:5001/ws?key=${apiKey}`;
+    const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
     ws = new WebSocket(WS_URL);
 
     ws.onopen = async () => {
-        console.log('WebSocket Connected to Backend Proxy');
+        console.log('WebSocket Connected directly to Gemini API');
+        
+        // Send initial setup config instantly upon connection
+        const setup_msg = {
+            "setup": {
+                "model": "models/gemini-3.1-flash-live-preview",
+                "generationConfig": {
+                    "responseModalities": ["AUDIO"],
+                    "speechConfig": {
+                        "voiceConfig": {
+                            "prebuiltVoiceConfig": {"voiceName": "Aoede"}
+                        }
+                    }
+                },
+                "systemInstruction": {
+                    "parts": [{"text": "You are a friendly, witty AI avatar inside a web browser. You support and can speak multiple languages including Telugu, Hindi, and English. Respond in the language the user speaks to you. Give very short, conversational responses."}]
+                }
+            }
+        };
+        ws.send(JSON.stringify(setup_msg));
+
         await initMicrophone();
     };
 
