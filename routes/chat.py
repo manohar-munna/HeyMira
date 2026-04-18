@@ -11,7 +11,7 @@ chat_bp = Blueprint('chat', __name__)
 @chat_bp.route('/api/chat/new', methods=['POST'])
 @login_required
 def new_conversation():
-    data = request.get_json() or {}
+    data = request.get_json(force=True, silent=True) or {}
     persona_id = data.get('persona_id')
 
     conv = Conversation(
@@ -26,7 +26,7 @@ def new_conversation():
 @chat_bp.route('/api/chat/send', methods=['POST'])
 @login_required
 def send_message():
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     conversation_id = data.get('conversation_id')
     content = data.get('content', '').strip()
     is_voice = data.get('is_voice', False)
@@ -130,7 +130,7 @@ def delete_conversation(conversation_id):
 @login_required
 def send_message_stream():
     """Stream AI response via Server-Sent Events for instant typing effect."""
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     conversation_id = data.get('conversation_id')
     content = data.get('content', '').strip()
     is_voice = data.get('is_voice', False)

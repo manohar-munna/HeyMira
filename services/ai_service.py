@@ -186,18 +186,13 @@ You are texting them right now. Keep it 100% real."""
     prompt = f"{messages_context}Them: {user_message}\nYou:"
 
     try:
-        api_key = key_manager.get_working_key()
-        if api_key:
-            genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(
+        response = key_manager.call_with_retry_stream(
+            'gemini-2.0-flash',
             [{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt}]}],
-            generation_config=genai.types.GenerationConfig(
+            genai.types.GenerationConfig(
                 max_output_tokens=150,
                 temperature=0.9,
-            ),
-            stream=True
+            )
         )
 
         for chunk in response:

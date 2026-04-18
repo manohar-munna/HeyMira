@@ -7,7 +7,7 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/api/auth/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '')
@@ -31,7 +31,7 @@ def register():
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     username = data.get('username', '').strip()
     password = data.get('password', '')
 
@@ -59,7 +59,7 @@ def logout():
 @auth_bp.route('/api/auth/update-theme', methods=['POST'])
 @login_required
 def update_theme():
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     theme = data.get('theme', 'calm-night')
     valid_themes = ['calm-night', 'warm-sunset', 'ocean-breeze', 'blossom', 'forest', 'cloudy']
     if theme not in valid_themes:
