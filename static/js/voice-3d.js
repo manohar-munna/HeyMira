@@ -82,7 +82,7 @@ async function startLiveSession(apiKey) {
         // Send initial setup config instantly upon connection
         const setup_msg = {
             "setup": {
-                "model": "models/gemini-3.1-flash-live-preview",
+                "model": "models/gemini-2.0-flash-exp",
                 "generationConfig": {
                     "responseModalities": ["AUDIO"],
                     "speechConfig": {

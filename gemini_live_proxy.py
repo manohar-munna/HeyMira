@@ -8,7 +8,7 @@ import threading
 import os
 
 # Use the standard model for the Live API
-MODEL_NAME = "gemini-3.1-flash-live-preview"
+MODEL_NAME = "gemini-2.0-flash-exp"
 
 async def proxy_gemini(websocket, default_api_key=None):
     # Get API key from the query string

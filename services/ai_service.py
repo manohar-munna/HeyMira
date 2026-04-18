@@ -114,7 +114,7 @@ You are texting them right now. Keep it 100% real and identical to their writing
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-2.0-flash-lite',
+            'gemini-2.0-flash',
             [{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=150,  # Short responses
@@ -190,7 +190,7 @@ You are texting them right now. Keep it 100% real."""
         if api_key:
             genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(
             [{"role": "user", "parts": [{"text": system_prompt + "\n\n" + prompt}]}],
             generation_config=genai.types.GenerationConfig(
@@ -313,7 +313,7 @@ Conversation text to analyze:
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-2.0-flash-lite',
+            'gemini-2.0-flash',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=4000,
@@ -373,7 +373,7 @@ Conversation text:
 
     try:
         response = key_manager.call_with_retry(
-            'gemini-2.0-flash-lite',
+            'gemini-2.0-flash',
             [{"role": "user", "parts": [{"text": prompt}]}],
             genai.types.GenerationConfig(
                 max_output_tokens=150,
@@ -412,7 +412,7 @@ Important:
             data = image_data_base64
 
         response = key_manager.call_with_retry(
-            'gemini-2.0-flash-lite', 
+            'gemini-2.0-flash', 
             [
                 {
                     "role": "user",
