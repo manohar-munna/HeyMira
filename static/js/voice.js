@@ -333,7 +333,7 @@ function startVoiceCall() {
         if (isVoiceActive && !isSpeaking && !isThinking) {
             try {
                 setTimeout(() => {
-                    if (isVoiceActive && !isSpeaking && !isThinking && !isMuted && recognition) {
+                    if (isVoiceActive && !isSpeaking && !isThinking && !isMuted) {
                         recognition.start();
                         setCallStatus('listening');
                     }
